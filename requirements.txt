@@ -72,6 +72,7 @@ urllib3==2.1.0
 virtualenv==20.25.1
 webdriver-manager==4.0.1
 webencodings==0.5.1
+whitenoise==6.8.2
 wsproto==1.2.0
 xhtml2pdf==0.2.14
 zopfli==0.2.3
