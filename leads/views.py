@@ -605,7 +605,8 @@ def commercialApproval(request, approval_type, lead_id, approvalStatus):
             service_category_instance.status_history.add(status_instance)
 
             subject = f'commercial rejected for lead id {service_category_instance.lead_id}'
-            message = f'<h2>Hello {service_category_instance.associate.name if service_category_instance.associate else ''}</h2></br><p>Commercial has been rejected for lead id {service_category_instance.lead_id}. <a href="http://10.20.52.37:3000/lead_management">Click here to proceed further</a>.</p>'
+            assoc_name = service_category_instance.associate.name if service_category_instance.associate else ''
+            message = f'<h2>Hello {assoc_name}</h2></br><p>Commercial has been rejected for lead id {service_category_instance.lead_id}. <a href="http://10.20.52.37:3000/lead_management">Click here to proceed further</a>.</p>'
 
             title = 'commercial_rejected'
         
