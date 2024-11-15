@@ -617,6 +617,7 @@ def commercialApproval(request, approval_type, lead_id, approvalStatus):
             'updated_by': request.user
         })
 
+
         service_category_instance.history.add(lead_history_instance)
 
         if service_category_instance.associate:
