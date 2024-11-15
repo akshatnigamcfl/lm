@@ -14,4 +14,4 @@ python manage.py collectstatic --no-input
 python manage.py migrate
 
 
-ls /path/to/staticfiles/
+# ls /path/to/staticfiles/
