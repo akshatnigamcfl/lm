@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.11.1/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <title>{% block page_title %}{% endblock  %}</title>
+
+    {% load static %}
+    {% load poll_extras %}
+
+    {% comment %} <script src="assets/js/getcookies.js" ></script> {% endcomment %}
+    <script src="{% static "assets/js/getcookies.js" %}" ></script>
+    <script src="{% static "assets/js/loader.js" %}" ></script>
+
+    <style>
+        ::-webkit-scrollbar{
+            {% comment %} background-color: grey; {% endcomment %}
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb{
+            background: gray;
+        }
+
+        ::-webkit-scrollbar:horizontal {
+            height: 3px; /* Set the height for horizontal scrollbar */
+        }
+        
+        ::-webkit-scrollbar-thumb:horizontal {
+            background-color: gray; /* Style for horizontal scrollbar thumb */
+        }
+
+    </style>
+
+</head>
+<body class="w-screen h-screen bg-white max-w-full">
+    <div class="w-full h-full">
+        
+        <header class="h-[100px] w-full p-1 flex">
+            <div class='logo h-full w-[200px] p-1 flex justify-center items-center'>
+                <img class="w-16 h-12" src="{% static "assets/images/evitaminlogo.png" %}">
+            </div>
+            <nav class=" w-[calc(100%-200px)] h-full flex">
+                <div class="w-[calc(100%-200px)] h-full">
+                    {% comment %} 
+                        <ul class='flex'>
+                            <li class="mx-3">Dashboard</li>
+                            <li class="mx-3">User Management</li>
+                            <li class="mx-3">Service</li>
+                            <li class="mx-3">Approvals</li>
+                        </ul> 
+                    {% endcomment %}
+
+                    <div role="tablist" class="tabs tabs-bordered h-10">
+                        <a href="/dashboard" role="tab" class="navlinks tab {% if request.META.PATH_INFO == '/dashboard' or request.META.PATH_INFO == '/'  %}tab-active{% endif %}">Dashboard</a>
+                        
+                        {% if request.user|role_validity:'super_admin' or request.user|role_validity:'admin' or request.user.is_admin %}
+                            <a href="/users" trole="tab" class="navlinks tab {% if request.META.PATH_INFO == '/users' %}tab-active{% endif %}">Users</a>
+                        {% endif %}
+
+                        {% if request.user|role_validity:'super_admin' or request.user|role_validity:'admin' or request.user|role_validity:'business_development_associate' or request.user|role_validity:'business_development_team_lead' or request.user.is_admin %}
+                            <a href="/leads" trole="tab" class="navlinks tab {% if request.META.PATH_INFO == '/leads' %}tab-active{% endif %}">Leads</a>
+                        {% endif %}
+
+                        {% if request.user|role_validity:'super_admin' or request.user.is_admin %}
+                            <a href="/services" role="tab" class="navlinks tab {% if request.META.PATH_INFO == '/services' %}tab-active{% endif %}">Services</a>
+                        {% endif %}
+                        
+                        {% if request.user|role_validity:'super_admin' or request.user|role_validity:'business_development_team_lead' or request.user.is_admin %}
+                            <a href="/approval" role="tab" class="navlinks tab {% if request.META.PATH_INFO == '/approval' %}tab-active{% endif %}">Approvals</a>
+                        {% endif %}
+
+                        {% if request.user|role_validity:'accounts_team_lead' or request.user|role_validity:'accounts_associate' or request.user.is_admin %}
+                            <a href="/payments" role="tab" class="navlinks tab {% if request.META.PATH_INFO == '/payments' %}tab-active{% endif %}">Payments</a>
+                        {% endif %}
+                    
+                    </div>
+
+
+                    
+                    <div class="bg-white w-full h-[calc(100%-2.5rem)]">
+                        {% if request.META.PATH_INFO == '/dashboard' or request.META.PATH_INFO == '/' %}
+
+                        <div class="h-full flex">
+                            <div class="flex-1 flex justify-center items flex-col">
+                                <p class="text-lg font-bold text-[#67B037] capitalize tracking-wider">Welcome Back, {{request.user.name}} !</p>
+                                <p class="tracking-wider text-xs">{{assigned_leads}} new leads added</p>
+                            </div>
+                            
+                            <div class="flex-1 flex items-end justify-end">
+                                    <select class="dashboard_date_select capitalize text-sm bg-slate-900 text-white h-8 px-3 rounded-xl mx-3">
+                                        {% if request.GET.date_type|default:"this_month"  %}
+                                            <option disabled selected value="{{request.GET.date_type|default:"this_month" }}">{{ request.GET.date_type|default:"this_month"|customreplacespace:"_" }}</option>
+                                        {% endif %}
+                                        <option value="this_month">This Month</option>
+                                        <option value="last_week">Last Week</option>
+                                        <option value="last_month">Last Month</option>
+                                        <option value="last_7_days">Last 7 Days</option>
+                                        <option value="last_30_days">Last 30 Days</option>
+                                        <option value="last_60_days">Last 60 Days</option>
+                                        <option value="custom">Custom</option>
+                                    </select>
+
+                                    <div class="h-8 hidden dashboard_custom_date_selector flex">
+                                        <input class="date_from h-full rounded border mx-3" name="date_from" type="date">
+                                        to
+                                        <input class="date_to h-full rounded border mx-3" name="date_to" type="date">
+
+                                        <div>
+                                            <button class="custom_submit btn btn-success text-white h-8 py-1 min-h-8">Success</button>
+                                        </div>
+
+                                    </div>
+                            </div>
+                        </div>
+                        <script>
+                            const dashboard_date_select = document.querySelector('.dashboard_date_select');
+                            dashboard_date_select.addEventListener('change',()=>{
+                                const dashboard_custom_date_selector = document.querySelector('.dashboard_custom_date_selector');
+                                if (dashboard_date_select.value === 'custom' ){
+                                    dashboard_custom_date_selector.classList.remove('hidden')
+
+                                    const custom_submit = document.querySelector('.custom_submit');
+                                    custom_submit.addEventListener('click',()=>{
+
+                                        const date_from = document.querySelector('.date_from');
+                                        const date_to = document.querySelector('.date_to');
+
+                                        const params = new URLSearchParams(window.location.search)
+                                        params.set('date_type', dashboard_date_select.value);
+                                        params.set('date_from', date_from.value);
+                                        params.set('date_to', date_to.value);
+                                        window.location.href = window.location.pathname+'?'+params.toString()
+                                    })
+
+                                } else {
+                                    dashboard_custom_date_selector.classList.add('hidden')
+
+                                    const params = new URLSearchParams(window.location.search)
+                                    params.set('date_type', dashboard_date_select.value);
+                                    console.log(params.toString())
+                                    window.location.href = window.location.pathname+'?'+params.toString()
+
+                                }
+                            })
+                        </script>
+
+                    {% elif request.META.PATH_INFO == '/users' %}
+                    
+                    {% comment %} <div class="h-full w-full flex items-end justify-end">
+
+                        {% with request.GET.type|default:'active' as parameter_value %}
+                            {% if parameter_value == 'active' %}
+                                <div class="flex mx-3 items-center">
+                                    <div class=" border rounded-s-lg p-0.5 flex">
+                                        <input type="text" class="h-[2rem] w-36 user_search outline-none text-xs">
+                                        <div class="h-[2rem] flex items-center justify-center px-1 cursor-pointer text-slate-200 hover:text-slate-400 clear_button selection-none">x</div>
+                                        <select class="h-[2rem] user_search_selection border-l text-xs">
+                                            <option value="employee_id">Employee Id</option>
+                                            <option value="name">Name</option>
+                                        </select>
+                                    </div>
+                                    <button class=" user_search_selection_submit rounded-s-none btn btn-success text-white h-[2.3rem] min-h-[2rem] text-xs">Search</button>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+
+                        <button class="create_user btn btn-success text-white h-[2.3rem] min-h-[2.3rem] text-xs">Create User</button>
+                    </div> {% endcomment %}
+
+
+
+                    
+                    {% comment %} {% elif request.META.PATH_INFO == '/services' %}
+                        {% with request.GET.type|default:'commercials' as parameter_value %}
+                            <div class="h-full w-full flex items-end justify-between">
+                                <div role="tablist" class="tabs tabs-boxed">
+                                    <a href="?type=commercials{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab text-xs {% if parameter_value == 'commercials' %}tab-active{% endif %}">Commercials</a>
+                                    <a href="?type=manage_service{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab text-xs {% if parameter_value == 'manage_service' %}tab-active{% endif %}" role="tab" class="tab">Manage Service</a>
+                                </div>
+                                {% if parameter_value == 'commercials' %}
+                                    <div>
+                                        <button class="create_new_service btn btn-success text-white h-[2.3rem] min-h-[2.3rem] text-xs">Create Commercials</button>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endwith %} {% endcomment %}
+
+                    {% elif request.META.PATH_INFO == '/leads' %}
+                        <div class="h-full w-full flex items-end justify-between">
+
+                            {% comment %} <label class="input input-bordered flex items-center gap-2 h-[2rem]">
+                                <input type="text" class="grow" placeholder="Search" />
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="cursor-pointer lead_search w-4 h-4 opacity-70"><path fill-rule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clip-rule="evenodd" /></svg>
+                            </label> {% endcomment %}
+                              {% comment %} <button class="search btn btn-success text-white h-[2rem] min-h-[2rem] mx-1">Search</button> {% endcomment %}
+
+                            {% with request.GET.type|default:'active' as parameter_value %}
+                                {% if parameter_value == 'active' %}
+                                {% comment %} Bulk Select {% endcomment %}
+                                {% comment %} <select class="border p-1 rounded-xl">
+                                    <option>Assign Associate</option>
+                                </select> {% endcomment %}
+                                    {% comment %} {% if request.user|role_validity:'business_development_team_lead' %} {% endcomment %}
+                                        <div class="lead_action_dv_bulk flex justify-center">
+                                            <select class="bulk_options_select border p-1 rounded-s-md text-xs h-[2rem]">
+                                                <option value="default">Bulk Options</option>
+                                                <option value="assign_associate">Assign Associate</option>
+                                                <option value="email_proposal">Email Proposal</option>
+                                                <option value="change_status">Change Status</option>
+                                                <option value="add_remark">Add Remark</option>
+                                            </select>
+                                            <select class="associate_select hidden border p-1 rounded-s-md text-xs h-[2rem] capitalize">
+                                                <option selected disabled value="default">Team Member</option>
+                                            </select>
+                                            
+                                            <button class="bulk_action btn btn-success rounded-s-none text-white h-[2rem] min-h-[2rem] text-xs">Bulk Action</button>
+                                        </div>
+                                        {% comment %} <script> {% endcomment %}
+                                            {% comment %} const lead_action_dv_bulk = document.querySelector('.lead_action_dv_bulk');
+                                            const bulk_options_select = document.querySelector('.bulk_options_select');
+
+                                            console.log('lead_action_dv_bulk', lead_action_dv_bulk)
+                                            bulk_options_select.addEventListener('change', ()=>{
+                                                const associate_select = document.querySelector('.associate_select');
+                                                console.log('associate_select', associate_select, )
+                                                if (bulk_options_select.value === 'assign_associate'){
+                                                    associate_select.classList.remove('hidden')
+                                                } else {
+                                                    associate_select.classList.add('hidden')
+                                                }
+                                            }) {% endcomment %}
+                                        {% comment %} </script> {% endcomment %}
+                                    {% comment %} {% endif %} {% endcomment %}
+
+                                    <div class="flex mx-3 items-center">
+                                        <div class=" border rounded-s-md p-0.5 flex">
+                                            <select class="h-[1.5rem] lead_search_selection border-r text-xs">
+                                                <option value="client_id">Client Id</option>
+                                                <option value="lead_id">Lead Id</option>
+                                                <option value="client_name">Client Name</option>
+                                                <option value="contact_number">Contact Number</option>
+                                                <option value="email_id">Email Id</option>
+                                            </select>
+                                            <input type="text" class="h-[1.5rem] w-28 lead_search outline-none text-xs px-1">
+                                            <div class="h-[1.5rem] flex items-center justify-center px-1 cursor-pointer text-slate-200 hover:text-slate-400 clear_button selection-none">x</div>
+                                        </div>
+                                        {% comment %} <button class=" btn btn-success text-white h-[2.5rem] min-h-[2rem]">Search</button> {% endcomment %}
+                                        <button class="lead_search_selection_submit rounded-s-none btn btn-success text-white h-[1.85rem] min-h-[1.85rem] text-xs">Search</button>
+
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+                            
+                              <button class="create_lead btn btn-success text-xs text-white h-[2rem] min-h-[2rem] mx-3">Create Lead</button>
+                        </div>
+
+                    {% endif %} 
+
+
+                    </div>
+
+                </div>
+
+
+                <div class="w-[200px] h-full flex justify-center">
+                    <div class="relative setting_btn w-12 h-12 border-2 border-green-600 rounded-full p-2 cursor-pointer hover:shadow-2xl">
+                        <img class="w-full h-full" src="{% static "assets/images/user_logo_gray.png" %}">
+                        <div class="absolute setting_btn_opt hidden w-40 h-auto bg-white border right-0 top-[50px] z-50 shadow-2xl">
+                            <a href="/my-info"><div class="h-10 border w-full flex justify-center items-center hover:bg-slate-800 hover:text-white text-sm">My Info</div></a>
+                            <a href="/logout"><div class="h-10 border w-full flex justify-center items-center hover:bg-slate-800 hover:text-white text-sm">Logout</div></a>
+                        <div>
+                    </div>
+                </div>
+            </nav>
+
+        </header>
+
+        <script>
+            const setting_btn = document.querySelector('.setting_btn')
+            setting_btn.addEventListener('click',()=>{
+                const setting_btn_opt = document.querySelector('.setting_btn_opt')
+                if (setting_btn_opt.classList.value.includes('hidden')){
+                    setting_btn_opt.classList.remove('hidden')
+                } else {
+                    setting_btn_opt.classList.add('hidden')
+                }
+            })
+        </script>
+        
+        <div class="w-full h-[calc(100%-100px)] ">
+            {% block page_body %}{% endblock  %}
+
+        </div>
+
+    </div>
+
+
+    
+</body>
+</html>

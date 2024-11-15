@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser)
+from .func import generate_random_code
 # from leads.models import Segment
 
 
@@ -50,12 +51,11 @@ class UserAccountManager(BaseUserManager):
 	def create_superuser(self , email , password):
 		user = self.create_user(
 			email = self.normalize_email(email),
-			password = password
+			password = password,               
 		)
 		user.is_admin = True
 		user.is_staff = True
 		user.is_superuser = True
-        # user.token = 
 		user.save(using = self._db)
 		return user
       
@@ -71,12 +71,12 @@ class UserAccount(AbstractBaseUser):
     is_first_login = models.BooleanField(default = True)
     employee_status = models.ForeignKey(EmployeeStatus , on_delete=models.CASCADE, default=1)
     reporting_manager = models.ForeignKey("self", related_name = 'team_leaders_of' , on_delete=models.CASCADE, null=True, blank=True)
-    # program = models.ManyToManyField("leads.Program")
+    program = models.ManyToManyField("leads.program")
     mobile_number = models.CharField(max_length=15, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey('self', related_name = 'creator_of', on_delete=models.CASCADE, null=True, blank=True)
-    token = models.CharField(max_length=300, blank=True, default='')
+    user_token = models.CharField(max_length=300, blank=True, default=generate_random_code())
     employee_leaves = models.ManyToManyField(EmployeeLeaves, related_name='user_accounts')
     visibility = models.BooleanField(default=True)
     objects = UserAccountManager()

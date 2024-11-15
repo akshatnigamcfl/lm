@@ -1,0 +1,1241 @@
+{% extends "layout/layout.html" %}
+
+{% block page_title %}Dashboard{% endblock  %}
+
+
+{% block page_body %}
+
+{% load static %}
+{% load poll_extras %}
+
+{% if message %}
+    {{message}}
+{% endif %}
+
+
+
+{% if messages %}
+<div class="message_box absolute top-[70px] left-[50%] translate-x-[-50%] shadow-2xl w-60 rounded-2xl cursor-arrow">
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} ">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+
+
+
+<script>
+
+    var selected_programs_list = [];
+    var selectedSegment;
+    var selectedService;
+    var selectedMarketplace;
+    var selectedProgram;
+    {% comment %} let userServiceSelect = 'marketplace'; {% endcomment %}
+
+    const main_dropdown_data = [
+        {% for d in dropdown_data %}
+        {% for k,v in d.items %}
+            { 'table': '{{k}}', 'value': [
+                {% if k == 'segment' %}
+                    {% for i in v %}{'id': {{i.id}}, 'value': '{{i.segment}}' } ,{% endfor %},
+            
+                {% elif k == 'service' %}
+                    {% for i in v %}{ 'segment': {'id': {{i.segment.id}}, 'value': '{{i.segment.segment}}'}, 'service': {'id': {{i.id}}, 'value': '{{i.service}}'} } ,{% endfor %},
+
+                {% elif k == 'marketplace' %}
+                    {% for i in v %}{ 'segment': {'id': {{i.service.segment.id}}, 'value': '{{i.service.segment.segment}}'}, 'service': {'id': {{i.service.id}}, 'value': '{{i.service.service}}'} , 'marketplace': {'id': {{i.id}}, 'value': '{{i.marketplace}}'}, } ,{% endfor %},
+
+                {% elif k == 'program' %}
+                    {% for i in v %} { 'segment': {'id': {{i.marketplace.service.segment.id}}, 'value': '{{i.marketplace.service.segment.segment}}'}, 'service': {'id': {{i.marketplace.service.id}}, 'value': '{{i.marketplace.service.service}}'}, 'marketplace': {'id': {{i.marketplace.id}}, 'value': '{{i.marketplace.marketplace}}'}, 'program': {'id': {{i.id}}, 'value': '{{i.program}}'},  } ,{% endfor %},
+                
+                    {% endif %}
+                ]},
+         {% endfor %}
+        {% endfor %}
+    ]
+
+    console.log('main_dropdown_data',main_dropdown_data)
+
+
+    function interDependentFields(main_target, append_target, search_table, result_table){
+        main_target.addEventListener('change',()=>{
+            append_target.innerHTML = `<option selected disabled value=default class="capitalize">Select ${result_table}</option>`
+            main_dropdown_data.forEach(f=>{
+                if(f.table === result_table){
+                    f.value.forEach(g=>{
+                        if (g[search_table].id == main_target.value) {
+                            console.dir(append_target)
+                            console.log(append_target.disabled)
+                                if (append_target.disabled){
+                                    append_target.disabled = false
+                                }
+                                const opt = document.createElement('option');
+                                opt.value = g[result_table].id
+                                opt.innerText = g[result_table].value
+                                append_target.append(opt)
+                        }
+                    })
+                }
+            })
+        })
+    }
+
+    function interDependentFieldsInput(main_target, append_target){
+        console.log(main_target, append_target)
+        main_target.addEventListener('change',()=>{
+            if (append_target.disabled){
+                append_target.disabled = false
+            }
+        })
+    }
+
+    function highlighter(data, target){
+        data.forEach(e=>{
+            e.parentElement.classList.remove('bg-slate-400')
+        })
+
+        target.parentElement.classList.add('bg-slate-400')
+    }
+
+    function defineContainers(){
+        const segment_container = document.querySelector('.segment_container');
+        const service_container = document.querySelector('.service_container');
+        const marketplace_container = document.querySelector('.marketplace_container');
+        const program_container = document.querySelector('.program_container');
+        const commercial_main_dv = document.querySelector('.commercial_main_dv');
+
+        return { 'segment': segment_container, 'service': service_container, 'marketplace': marketplace_container, 'program': program_container, 'commercial_main_dv': commercial_main_dv }
+    }
+
+    function rPF(e){
+        selected_programs_list.splice(selected_programs_list.indexOf(Number(e.target.parentElement.getAttribute('data-id'))), 1)
+        e.target.parentElement.parentElement.remove()
+        console.log(selected_programs_list)
+    }
+
+    function cPP(e){
+        const popup = document.querySelector('.popup');
+        popup.remove()
+    }
+
+    function selectedProgramsViewFunc(program_list){
+
+        const selected_program_view_dv = document.querySelector('.selected_program_view_dv');
+        if (program_list.length > 0){
+            selected_program_view_dv.classList.remove('hidden')
+        } else {
+            selected_program_view_dv.classList.add('hidden')
+        }
+
+        const selected_programs_view = document.querySelector('.selected_programs_view');
+        main_dropdown_data.forEach(e=>{
+            if (e.table === 'program'){
+                e.value.forEach(e=>{
+                    if (program_list.includes(e.program.id)){
+                        // console.log(e.program.id)
+                        selected_programs_view.innerHTML += `
+                            <li class="h-6 w-full flex items-center my-1">
+                                <div class="archive_user_program w-6 h-full p-1 flex justify-center items-center cursor-pointer bg-red-600 rounded-l-lg" data-id="${e.program.id}" onclick="rPF(event)" ><img src="/static/assets/images/close_button.png"></div>
+                                <div class="w-[calc(100%-24px)] h-full bg-white p-1 rounded-r-lg text-nowrap">${e.segment.value} > ${e.service.value} > ${e.marketplace.value} > ${e.program.value}</div>
+                            </li>
+                            `
+                    }
+                })
+            }
+        })
+    }
+
+    function clearSelectedProgram(){
+        selected_programs_list = [];
+        document.querySelector('.selected_program_view_dv').classList.add('hidden');
+        document.querySelector('.selected_programs_view').innerHTML='';
+        console.log(selected_programs_list);
+    }
+
+</script>
+
+
+
+<div class="w-full h-full py-1 px-4 flex">
+    <div class="w-1/2 h-full p-1 px-3 rounded-3xl bg-gray-100 ">
+
+        <div class="h-[40px] p-1 flex justify-between">
+            <div class="flex justify-center items-center">
+                <button class="create_user btn btn-success text-white btn-xs text-xs">Create User</button>
+            </div>
+            
+            <div class="h-full flex items-center justify-end">
+                {% with request.GET.type|default:'active' as parameter_value %}
+                    {% if parameter_value == 'active' %}
+                        <div class="flex mx-3 items-center">
+                            <div class=" border rounded-s-lg p-0.5 flex bg-white">
+                                <select class="h-6 user_search_selection border-r text-xs">
+                                    <option value="name">Name</option>
+                                </select>
+                                <input type="text" class="h-6 w-28 user_search outline-none text-xs">
+                                <div class="h-6 flex items-center justify-center px-1 cursor-pointer text-slate-200 hover:text-slate-400 clear_button selection-none">x</div>
+                            </div>
+                            <button class=" user_search_selection_submit rounded-s-none btn btn-success text-white h-6 min-h-7 text-xs">Search</button>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            {% comment %} <div class="h-full w-44 px-4">
+                <div role="tablist" class="tabs tabs-boxed">
+                    {% with request.GET.type as parameter_value %}
+                        <a href="?type=active{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab text-xs btn-xs {% if not parameter_value or parameter_value == 'active' %}tab-active{% endif %}">Active</a>
+                        <a href="?type=archive{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab text-xs btn-xs {% if parameter_value == 'archive' %}tab-active{% endif %}">Archive</a>
+                    {% endwith %}
+                </div>
+            </div> {% endcomment %}
+        </div>
+        
+        <div class="w-full h-[calc(100%-90px)] flex flex-col px-2 rounded-xl">
+            <div class="overflow-x-auto bg-white p-2 rounded-xl">
+                <table class="table">
+                  <!-- head -->
+                  <thead>
+                    <tr>
+                      {% comment %} <th class="py-2 px-1 ">Employee ID</th> {% endcomment %}
+                      <th class="py-2 px-1 ">Name</th>
+                      <th class="py-2 px-1 ">Reporting Manager</th>
+                      <th class="py-2 px-1 ">User Role</th>
+                      <th class="py-2 px-1 ">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="main_table text-xs">
+                    <!-- row 1 -->
+
+                    
+                    {%for d in data%}
+
+                    <tr class="border-b border-slate-200 view_edit cursor-pointer"
+                                            
+                        data-user-id="{{d.id}}" 
+                        data-name="{{d.name}}"
+                        data-email="{{d.email}}"
+                        data-mobile-number="{{d.mobile_number}}"
+                        data-user-role-id="{{d.user_role.first.id}}"
+                        data-user-role="{{d.user_role.first.title}}"
+
+                        data-reporting-manager-id = "{{d.reporting_manager.id}}"
+                        data-reporting-manager-name = "{{d.reporting_manager.name}}"
+                        {% comment %} data-role-type = "{{d.role_type}}" {% endcomment %}
+                        data-employee-status = "{{d.employee_status.id}}" ,
+
+                        {% comment %} program : e.getAttribute('data-program'), {% endcomment %}
+                        {% comment %} data-service="[{% for s in d.service.all %}{{s.id}},{% endfor %}]" {% endcomment %}
+                        {% comment %} data-marketplace="[{% for s in d.marketplace.all %}{{s.id}},{% endfor %}]" {% endcomment %}
+                        {% comment %} data-marketplace="[{% for s in d.marketplace.all %}{{s.id}},{% endfor %}]" {% endcomment %}
+                        {% comment %} data-program="[ {% if d.program %}{% for s in d.program.all %}{{s.id}},{% endfor %}{% endif %}]" {% endcomment %}
+                        {% comment %} data-sub-program="[{% for s in d.sub_program.all %}{{s.id}},{% endfor %}]" {% endcomment %}>
+                        {% comment %} <td class="p-1 capitalize">{{d.employee_id}}</td> {% endcomment %}
+                        <td class="p-1 capitalize">{{d.name}}</td>
+                        <td class="p-1 capitalize">{{d.reporting_manager.name}}</td>
+                        <td class="p-1 capitalize"> {% for ur in d.user_role.all %}{{ ur.title|customreplacespace:"_" }}</br>{% endfor %}</td>
+                        <td class="p-1">
+                            <div class="w-full h-full flex">
+                                {% with request.GET.type as parameter_value %}
+                                    {% if not parameter_value or parameter_value == 'active' %}
+                                        {% comment %} <div  {% endcomment %}
+                                            {% comment %} data-user-id="{{d.id}}" 
+                                            data-employee_id="{{d.employee_id}}"
+                                            data-name="{{d.name}}"
+                                            data-email="{{d.email}}"
+                                            data-mobile-number="{{d.mobile_number}}"
+                                            data-user-role-id="{{d.user_role.first.id}}"
+                                            data-user-role="{{d.user_role.first.title}}"
+                                            data-employee-status={{d.employee_status.id}}
+
+                                            data-service="[{% for s in d.service.all %}{{s.id}},{% endfor %}]"
+                                            data-marketplace="[{% for s in d.marketplace.all %}{{s.id}},{% endfor %}]"
+                                            data-program="[{% for s in d.program.all %}{{s.id}},{% endfor %}]"
+                                            data-sub-program="[{% for s in d.sub_program.all %}{{s.id}},{% endfor %}]" {% endcomment %}
+
+                                            {% comment %} data-tip="View/Edit" {% endcomment %}
+                                            {% comment %} class='view_edit tooltip-open tool_tip cursor-pointer h-6 w-6 flex justify-center items-center bg-green-600 rounded-lg mx-1 p-1'> {% endcomment %}
+                                            {% comment %} <img src="{% static "assets/images/action_view_white.png" %}"> {% endcomment %}
+                                        {% comment %} </div> {% endcomment %}
+                                        <div data-user-id="{{d.id}}" data-tip="Archive" class='archive_user tooltip-open tool_tip cursor-pointer h-6 w-6 flex justify-center items-center bg-red-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_delete_white.png" %}"></div>
+                                    {% elif parameter_value and parameter_value == 'archive' %}
+                                        <div data-user-id="{{d.id}}" data-tip="Restore" class='restore_user tooltip-open tool_tip cursor-pointer h-6 w-6 flex justify-center items-center bg-[#5BABE5] rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_restore_white.png" %}"></div>
+                                    {% endif %}
+                                {% endwith %}
+
+                          </div>
+                          </td>
+                      </tr>
+                    {% endfor %}
+
+                  </tbody>
+                </table>
+              </div>
+        </div>
+
+        <div class="flex justify-center items-center h-[50px]">
+            
+            {% if pages != 'no data' %}
+                {% include 'layout/pagination.html' with data=data %}
+            {% endif %} 
+
+            {% comment %} <div class="join">
+                <button class="join-item btn btn-sm btn-active">2</button>
+            </div> {% endcomment %}
+        </div>
+    </div>
+    <div class="w-2/4 h-full p-1 px-3 flex justify-center userFormDv">
+    </div>
+</div>
+
+
+<script src="{% static "assets/js/confirmation_popup.js" %}" ></script>
+<script src="{% static "assets/js/user_edit_popup.js" %}" ></script>
+<script src="{% static "assets/js/fetch.js" %}" ></script>
+<script src="{% static "assets/js/poper.js" %}" ></script>
+<script src="{% static "assets/js/getcookies.js" %}" ></script>
+
+<script>
+
+    function userEditPopUp(data, message){
+        const popup = document.querySelector('.userFormDv');
+        // popup.classList.value = 'w-screen h-screen absolute top-0 left-0 flex justify-center items-center bg-[rgba(0,0,0,0.7)] '
+        // action="${data ? '{% url "update_user_account" %}' : '{% url "create_user_account" %}'}"
+        popup.innerHTML = `
+            <form class="w-full" id="add_user" method="POST">
+                <div class="card w-full h-full bg-white text-neutral-content overflow-hidden text-xs">
+                    <div class="h-[30px] flex justify-between items-center text-white px-4 border-b bg-gray-200">
+                        <div class="text-slate-600 font-bold text-xs">${message}</div>
+                    </div>
+                    <div class="h-[calc(100%-50px)] w-full p-3 overflow-y-scroll bg-gray-50 text-xs">
+                    
+                        {% csrf_token %}
+
+                        <div class="w-full flex"> <div class="w-[35%] text-slate-700">Name</div>   <input type="text" class="inps w-[65%] my-1 text-slate-900 border flex h-10 px-2 rounded-xl capitalize" placeholder="name" value="${data?data.name:''}" name="name"></div>
+                        <div class="w-full flex"> <div class="w-[35%] text-slate-700">Email</div>   <input required type="text" class="inps w-[65%] my-1 text-slate-900 border flex h-10 px-2 rounded-xl " placeholder="email" value="${data?data.email:''}" name="email"></div>
+                        <div class="w-full flex"> <div class="w-[35%] text-slate-700">Mobile Number</div>   <input required type="text" class="inps w-[65%] my-1 text-slate-900 border flex h-10 px-2 rounded-xl " placeholder="mobile number" value="${data?data.mobile_number:''}" name="mobile_number"></div>
+                        <div class="w-full flex relative">
+                            <div class="w-[35%] text-slate-700 ">Reporting Manager</div>
+                            <input required data-id="${data?data.reporting_manager_id:''}" type="text" class="reporting_manager inps w-[65%] my-1 text-slate-900 border flex h-10 px-2 rounded-xl " placeholder="Reporting Manager" value="${data?data.reporting_manager_name:''}" name="reporting_manager">
+                            <div class="absolute left-[25%] top-[100%] w-[65%] h-auto max-h-48 bg-white border shadow-2xl z-50 rounded-xl overflow-y-auto reporting_manager_list_dv hidden">
+                                <ul class="h-full w-full user_list_cont text-slate-900">
+                                    <div class="h-full w-full flex justify-center items-center ">no user found</div>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="w-full flex"> <div class="w-[35%] text-slate-700">User Role</div>
+                            <select  required class="inps select_inp user_role my-1 border w-[65%] h-10 px-2 rounded-xl capitalize text-slate-900" placeholder="User Role" name="user_role">
+                                <option disabled selected value=null>Selet User Role</option>
+                                {% comment %} {% for s in user_role %}<option value="{{s.id}}">{{s.title|customreplacespace:'_'}}</option>{% endfor %} {% endcomment %}
+                            </select>
+                        </div>
+                        <div class="${data?'':'hidden'} w-full flex"> <div class="w-[35%] text-slate-700">Employe Status</div>
+                            <select required class="inps select_inp employee_status my-1 border w-[65%] h-10 px-2 rounded-xl capitalize text-slate-900" placeholder="employee status" name="employee_status">
+                                <option disabled selected value="null">select employee status</option>
+                                {% for s in employee_status %}<option value="{{s.id}}">{{s}}</option>{% endfor %}
+                            </select>
+                        </div>
+                        {% comment %} <div role="tablist" class=" m-2 tabs tabs-lifted"> {% endcomment %}
+                            {% comment %} <a role="tab" name="marketplace" class="sp_tab tab">Add marketplace</a> {% endcomment %}
+                            {% comment %} <a role="tab" name="program" class="sp_tab tab tab-active">Add Program</a> {% endcomment %}
+                        {% comment %} </div> {% endcomment %}
+                                
+
+                        <div class="w-full h-auto p-2 selected_program_view_dv hidden">
+                            <div class="flex flex-col p-2 bg-slate-300 rounded-xl p-2">
+                                <div class="text-center text-slate-900 h-[20px]">Selected Programs</div>
+                                <div class="h-[calc(100%-20px)] text-slate-900">
+                                <div class="btn btn-error btn-xs clear_selected_program">Clear All</div>
+                                    <ul class="selected_programs_view h-full w-full overflow-auto">
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        {% comment %} <div class="w-[100%] border rounded-xl p-5 my-2 bg-slate-100 user_service_dv" data-name="marketplace" >
+                            {% for s in segment %}
+                                <span class="capitalize text-slate-600">{{s}}</span>
+                                <div class="w-[95%] text-slate-900 bg-white rounded-lg p-2 m-3">
+                                    {% for sl in service_list %}
+                                        {% if sl.segment.id == s.id %}
+                                            <div class="my-3">
+                                                <div class="text-gray-700 capitalize font-semibold m-2 ">{{sl.service}}</div>
+                                                <div class="ml-5 flex w-full flex-wrap">
+                                                    {% for m in marketplace_list %}
+                                                        {% if sl.service.id == m.service.id %}
+                                                            <div class="capitalize mx-2 text-gray-500 w-1/4"><label><input data-segment="{{s.id}}" data-service="{{sl.service.id}}" data-marketplace="{{m.marketplace_id}}" class="inp service checkbox_inp" type="checkbox" name="service" value="{{m.id}}" id="service{{forloop.counter}}" ><span class="ml-2">{{m.marketplace}}</span></label></div>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div> {% endcomment %}
+
+
+
+                        <div class="w-[100%] user_program_dv bg-slate-100 text-slate-900 user_service_dv flex h-[400px]" data-name="program" >  
+                            {% for d in dropdown_data %}
+                                {% for key,value in d.items %}
+                                    <div class="flex-1 border {{key}}_container {% if key != 'segment' %}invisible{% endif %}">
+
+                                        <div class="flex justify-center my-2">
+                                            <div class="btn btn-warning btn-xs select_all_{{key}}">Select All {{key}}</div>
+                                        </div>
+
+                                        <div class="overflow-x-auto">
+                                            <table class="table">
+                                                <thead>
+                                                    <tr>
+                                                        {% if data != 'no data' %}
+                                                            {% if key == 'segment' %}
+                                                                <th class="p-1">Segment</th>
+                                                            {% endif %}
+                                                            {% if key == 'service' %}
+                                                                <th class="p-1">Service</th>
+                                                            {% endif %}
+                                                            {% if key == 'marketplace' %}
+                                                                <th class="p-1">Marketplace</th>
+                                                            {% endif %}
+                                                            {% if key == 'program' %}
+                                                                <th class="p-1">Program</th>
+                                                            {% endif %}
+                                                    </tr>
+                                                        {% else %}
+                                                            <div class="h-12 flex justify-center items-center bg-gray-200">no data</div>
+                                                        {% endif %}
+                                                </thead>
+                                                <tbody class="text-xs">                                                    
+                                                    {% if data != 'no data' %}
+                                                        {%for d in value%}
+                                                            <tr class="border-b border-slate-200 shadow-sm hover:shadow-md">
+                                                                {% if key == 'segment' %}
+                                                                    <td class="p-1 capitalize cursor-pointer {{key}}_item" data-type="{{key}}" data-id="{{d.id}}" >{{d.segment|customreplacespace:"_"}}</td>
+                                                                {% elif key == 'service' %}
+                                                                    <td class="p-1 capitalize cursor-pointer {{key}}_item" data-type="{{key}}" data-segment-id="{{d.segment.id}}", data-id="{{d.id}}">{{d.service|customreplacespace:"_"}}</td>                                                    
+                                                                {% elif key == 'marketplace' %}
+                                                                    <td class="p-1 capitalize cursor-pointer {{key}}_item" data-type="{{key}}" data-service-id="{{d.service.id}}" data-id="{{d.id}}"  data-id="{{d.data}}">{{d.marketplace|customreplacespace:"_"}}</td>
+                                                                {% elif key == 'program' %}
+                                                                    <td class="edit_{{key}} p-1 capitalize cursor-pointer {{key}}_item flex justify-between" data-type="{{key}}" data-marketplace-id="{{d.marketplace.id}}" data-id="{{d.id}}">
+                                                                        <span>{{d.program|customreplacespace:"_"}}</span> 
+                                                                        <button data-id="{{d.id}}" class="selectedProgramBtn btn btn-xs btn-success text-white">Select</button>
+                                                                        <button data-id="{{d.id}}" class="removeProgramBtn hidden btn btn-xs btn-error text-white">Remove</button>
+                                                                    </td>
+                                                                {% endif %}
+                                                            </tr>
+
+                                                        {% endfor %}
+                                                    {% endif %}
+
+                                                </tbody>
+                                            </table>
+
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <button data-id=${data?data.id: null} class="inps ${data?'update':'create' } btn btn-sm btn-success text-white">${data?'update':'create' }</button>
+                </div>
+            </form>
+        `;
+
+
+        {% for d in dropdown_data %}
+            {% for key,value in d.items %}
+
+
+                const select_all_{{key}} = popup.querySelector('.select_all_{{key}}')
+                select_all_{{key}}.addEventListener('click', ()=>{
+                    let dataList;
+
+                    {% if key == 'segment' %}
+                    
+                        dataList = [main_dropdown_data.filter(e=>e.table === 'program')[0]?.value.map(e=> {if(!selected_programs_list.includes(e.program.id)) return e.program.id }).filter(e=> e!=='' && e!==null && e !== undefined) ];
+                        
+                    {% elif key == 'service' %}
+
+                        dataList = [main_dropdown_data.filter(e=>e.table === 'program')[0]?.value.filter(e=>e.segment.id===Number(selectedSegment)).map(e=> {if(!selected_programs_list.includes(e.program.id)) return e.program.id }).filter(e=> e!=='' && e!==null && e !== undefined) ];
+                    
+                    {% elif key == 'marketplace' %}
+
+                        console.log('selected service', selectedService);
+                    
+                        dataList = [main_dropdown_data.filter(e=>e.table === 'program')[0]?.value.filter(e=>e.service.id===Number(selectedService)).map(e=> {if(!selected_programs_list.includes(e.program.id)) return e.program.id }).filter(e=> e!=='' && e!==null && e !== undefined) ];
+                    
+                    {% elif key == 'program' %}
+                    
+                        dataList = [main_dropdown_data.filter(e=>e.table === 'program')[0]?.value.filter(e=>e.marketplace.id===Number(selectedMarketplace)).map(e=> {if(!selected_programs_list.includes(e.program.id)) return e.program.id }).filter(e=> e!=='' && e!==null && e !== undefined) ];
+                    
+                    {% endif %}
+
+                    if (dataList[0].length > 0 ){
+                        dataList[0].forEach(e=>{
+                            selected_programs_list.push(e)
+                        })
+                        selectedProgramsViewFunc(dataList[0])
+                    }
+
+                })
+
+
+
+                const {{key}}_item = document.querySelectorAll('.{{key}}_item')
+                {{key}}_item.forEach(e=>{
+                    e.addEventListener('click', ()=>{
+                        highlighter({{key}}_item, e)
+                        let containers = defineContainers();
+                        
+                        {% if key == 'segment' %}
+                            if (containers.service.classList.value.includes('invisible')){
+                                containers.service.classList.remove('invisible');
+                            }
+                            containers.marketplace.classList.add('invisible');
+                            containers.program.classList.add('invisible');
+                            const service_list = document.querySelectorAll('.service_item');
+                            service_list.forEach(f=>{
+                                f.parentElement.classList.add('hidden');
+                            })
+                            service_list.forEach(f=>{
+                                if (Number(f.getAttribute('data-segment-id')) === Number(e.getAttribute('data-id'))){
+                                    f.parentElement.classList.remove('hidden');
+                                }
+                            })
+
+                            selectedSegment = e.getAttribute('data-id');
+
+                        {% elif key == 'service' %}
+                            if (containers.marketplace.classList.value.includes('invisible')){
+                                containers.marketplace.classList.remove('invisible');
+                            }
+                            containers.program.classList.add('invisible');
+                            const marketplace_list = document.querySelectorAll('.marketplace_item');
+                            marketplace_list.forEach(f=>{
+                                f.parentElement.classList.add('hidden');
+                            })
+                            marketplace_list.forEach(f=>{
+                                if (Number(f.getAttribute('data-service-id')) === Number(e.getAttribute('data-id'))){
+                                    f.parentElement.classList.remove('hidden');
+                                }
+                            })
+                            selectedService = e.getAttribute('data-id');
+
+                        {% elif key == 'marketplace' %}
+                            if (containers.program.classList.value.includes('invisible')){
+                                containers.program.classList.remove('invisible');
+                            }
+                            const program_list = document.querySelectorAll('.program_item');
+                            program_list.forEach(f=>{
+                                f.parentElement.classList.add('hidden');
+                            })
+                            program_list.forEach(f=>{
+                                if (Number(f.getAttribute('data-marketplace-id')) === Number(e.getAttribute('data-id'))){
+                                    f.parentElement.classList.remove('hidden');
+                                }
+                            })
+                            selectedMarketplace = e.getAttribute('data-id');
+
+                        {% endif  %}
+                    })
+                })
+            {% endfor %}
+        {% endfor %}
+
+
+        const clear_selected_program = document.querySelector('.clear_selected_program');
+        clear_selected_program.addEventListener('click', clearSelectedProgram )
+
+
+        const selectedProgramBtn = document.querySelectorAll('.selectedProgramBtn');
+        {% comment %} const removeProgramBtn = document.querySelectorAll('.removeProgramBtn'); {% endcomment %}
+        selectedProgramBtn.forEach((e, i)=>{
+            e.addEventListener('click',(f)=>{
+                f.preventDefault()
+                selected_programs_list.push(Number(e.getAttribute('data-id')));
+                e.classList.add('hidden')
+                // removeProgramBtn[i].classList.remove('hidden')
+                selectedProgramsViewFunc([Number(e.getAttribute('data-id'))]);
+            })
+        })
+        // removeProgramBtn.forEach((e, i)=>{
+        //     e.addEventListener('click',(f)=>{
+        //         f.preventDefault()
+        //         selected_programs_list.splice(selected_programs_list.indexOf(Number(e.getAttribute('data-id'))), 1 );
+        //         e.classList.add('hidden')
+        //         selectedProgramBtn[i].classList.remove('hidden')
+        //         console.log(selected_programs_list);    
+        //     })
+        // })
+        const reporting_manager = document.querySelector('.reporting_manager');
+        console.log(reporting_manager);
+        const reporting_manager_list_dv = document.querySelector('.reporting_manager_list_dv');
+        const user_list_cont = document.querySelector('.user_list_cont');
+        reporting_manager.addEventListener('input', async()=>{
+            user_list_cont.innerHTML = '';
+            let url = '{% url "user_list" attribute="**" %}'.replaceAll('**', reporting_manager.value)
+            try{
+                let a = await ftN(url, 'GET', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+                console.log(a);
+                reporting_manager_list_dv.classList.remove('hidden');
+                {% comment %} user_list_cont.innerHTML = ''; {% endcomment %}
+                a.data.forEach(e=>{
+                    const li = document.createElement('li');
+                    li.classList.value = 'cursor-pointer h-10 p-2 border hover:text-white hover:bg-blue-500';
+                    li.innerText = `${e.value} - ${e.role.length !== 0? e.role[0].replaceAll('_',' ') : '(role not defined)' } `;
+                    li.setAttribute('data-id', e.id);
+                    user_list_cont.append(li);
+                    li.addEventListener('click', ()=>{
+                        console.log('click workng', e);
+                        reporting_manager.value = e.value
+                        reporting_manager.setAttribute('data-id', e.id )
+                        reporting_manager_list_dv.classList.add('hidden')
+                    })
+                })
+            } catch(e) {
+                console.log(e)
+            }
+        })
+        reporting_manager.addEventListener('blur', async()=>{
+            // reporting_manager_list_dv.classList.add('hidden')
+        })
+        
+        {% comment %} const sp_tab = document.querySelectorAll('.sp_tab');
+        const user_service_dv = document.querySelectorAll('.user_service_dv');
+        sp_tab.forEach(e=>{
+            e.addEventListener('click',()=>{
+                sp_tab.forEach(e=>{
+                    e.classList.remove('tab-active')
+                })
+                e.classList.add('tab-active')
+                user_service_dv.forEach(f=>{
+                    f.classList.add('hidden')
+                })
+                user_service_dv.forEach(f=>{
+                    if(f.getAttribute('data-name') === e.name){
+                        userServiceSelect = f.getAttribute('data-name');
+                        f.classList.remove('hidden');
+                        console.log(userServiceSelect);
+                    }
+                })
+            })
+        }) {% endcomment %}
+
+
+
+        {% comment %} popup.innerHTML = `
+            <form action="${data ? '{% url "update_user_account" %}' : '{% url "create_user_account" %}'}" id="add_user" method="POST">
+                <div class="card w-[600px] h-[500px] bg-white text-neutral-content overflow-hidden text-xs">
+                    <div class="h-[35px] relative flex justify-center items-center text-white bg-slate-900">${title}</div>
+                        <img class="close_btn absolute h-6 w-6 top-[5px] right-[5px]" src="{% static "assets/images/close_button.png" %}">
+                    <div class="h-[30px] flex justify-between items-center text-white px-4 border-b bg-gray-200">
+                        <div class="text-slate-600 font-bold text-xs">${message}</div>
+                        ${data?'<label class="flex justify-center text-slate-900"><span>Edit</span><input type="checkbox" class="edit_toggle toggle toggle-xs ml-3" /><label>':''}
+                    </div>
+                        <div class="h-[calc(100%-100px)] w-full flex justify-between flex-wrap p-3 overflow-y-scroll bg-gray-50 text-xs">
+
+                        {% csrf_token %}
+                        
+
+                    <input ${data?'disabled': ''} type="text" class="inps my-1 text-slate-900 border flex w-[40%] h-10 px-2 rounded-xl capitalize" placeholder="name" value="${data ? data.name : ''}" name="name">
+                    <input ${data?'disabled': ''} required type="text" class="inps my-1 text-slate-900 border flex w-[40%] h-10 px-2 rounded-xl " placeholder="email" value="${data ? data.email : ''}" name="email">
+                    <input ${data?'disabled': ''} required type="text" class="inps my-1 text-slate-900 border flex w-[40%] h-10 px-2 rounded-xl " placeholder="mobile number" value="${data ? data.mobile_number : ''}" name="mobile_number">
+                        
+
+
+
+                        <select ${data?'disabled': ''} required class="inps select_inp user_role my-1 border w-[40%] h-10 px-2 rounded-xl capitalize text-slate-900" placeholder="User Role" name="user_role">
+                        <option disabled selected value=${data ? data.user_role_id : null }>${data ? data.user_role.replaceAll('_',' ') : 'Select User Role'}</option>
+                        </select>
+
+
+                        <select ${data?'disabled': ''} required class="inps ${data?'': 'hidden'} select_inp employee_status my-1 border w-[40%] h-10 px-2 rounded-xl capitalize text-slate-900" placeholder="employee status" name="employee_status">
+                            <option disabled selected value="null">select employee status</option>
+                            {% for s in employee_status %}<option value="{{s.id}}">{{s}}</option>{% endfor %}
+                        </select>
+
+                        <div class="w-[100%] border rounded-xl p-5 my-2 bg-slate-100">
+                            {% for s in segment %}
+                                <span class="capitalize text-slate-600">{{s}}</span>
+                                <div class="w-[95%] text-slate-900 bg-white rounded-lg p-2 m-3">
+                                    {% for sl in service_list %}
+                                        {% if sl.segment.id == s.id %}
+                                            <div class="my-3">
+                                                <div class="text-gray-700 capitalize font-semibold m-2 ">{{sl.service}}</div>
+                                                <div class="ml-5 flex w-full flex-wrap">
+                                                    {% for m in marketplace_list %}
+                                                        {% if sl.service.id == m.service.id %}
+                                                            <div class="capitalize mx-2 text-gray-500 w-1/4"><label><input data-segment="{{s.id}}" data-service="{{sl.service.id}}" data-marketplace="{{m.marketplace_id}}" class="inp service checkbox_inp" type="checkbox" name="service" value="{{m.id}}" id="service{{forloop.counter}}" ><span class="ml-2">{{m.marketplace}}</span></label></div>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+
+
+                    </div>
+                    <button data-id=${data?data.id: null} class="inps ${data?'update':'create' } btn btn-success text-white">Success</button>
+                </div>
+            </form>
+        ` {% endcomment %}
+
+            if ( data.employee_status || data.employee_status === 0 ){
+                const employee_status = popup.querySelector('.employee_status');
+                Array.from(employee_status.options).forEach((e,i)=>{
+                    if(e.value === 'null'){e.remove()}
+                    if (Number(e.value) === Number(data.employee_status)){
+                        console.log('selectedIndex', i-1)
+                        employee_status.selectedIndex = i-1;
+                    }
+                })
+            }
+
+
+
+        // popup.querySelector('#add_user').onsubmit = function() {
+        //   const select = popup.querySelector('.department');
+        //   if (select.value === "") {
+        //     console.log('working department')
+        //     return false; // Prevent form submission
+        //   }
+        //   return true; // Allow form submission
+        // };
+
+        
+        //document.body.append(popup)
+
+        const user_role = [
+        {% for s in user_role %}
+            { "user_role": {'id': {{s.id}}, 'value': '{{s.title|customreplacespace:'_'}}'} },
+        {% endfor %}
+        ];
+
+        const user_role_inp = document.querySelector('.user_role');
+        // const designation_inp = document.querySelector('.designation'); 
+
+        const user_role_filtMap = new Map();
+        user_role.forEach(item => {
+          user_role_filtMap.set(item.user_role.value, item); // Assuming `id` is the key
+        });
+        const user_role_filt = Array.from(user_role_filtMap.values());
+        
+        user_role_filt.forEach(e=>{
+            const opt = document.createElement('option');
+            opt.value = e.user_role.id
+            opt.innerText = e.user_role.value
+            user_role_inp.append(opt)
+        })
+
+        if (data.user_role_id){
+            console.log('data.user_role_id',data.user_role_id);
+            Array.from(user_role_inp.options).forEach((e,i)=>{
+                if(e.value === 'null'){e.remove()}
+                if (data.user_role_id === e.value ){
+                    user_role_inp.selectedIndex = i-1
+                }
+            })
+        }
+
+        // if (data.role_type){
+        //     const sp_tab = document.querySelectorAll('.sp_tab');
+        //     const user_service_dv = document.querySelectorAll('.user_service_dv');
+        //     sp_tab.forEach(e=>{
+        //         console.log(e)
+        //         if (e.name === data.role_type){
+        //             sp_tab.forEach(e=>{
+        //                 e.classList.remove('tab-active')
+        //             })
+        //             e.classList.add('tab-active')
+        //         }
+        //     })
+        // 
+        //     user_service_dv.forEach(e=>{
+        //         if(e.getAttribute('data-name') === data.role_type){
+        //             user_service_dv.forEach(e=>{
+        //                 e.classList.add('hidden')
+        //             })
+        //             e.classList.remove('hidden')
+        //         }
+        //     })
+        // }
+
+        //if (data.marketplace){
+        //     if (data.role_type === 'marketplace'){
+        //         let marketplace_list = data.marketplace.replaceAll('[',' ').replaceAll(']',' ').split(',').filter(e=>e!==' ' || e!=='').map(e=>Number(e)).filter(e=>e!==0) ;
+        //         const checkbox_inp = document.querySelectorAll('.checkbox_inp')
+        //         checkbox_inp.forEach(e=>{
+        //             if (marketplace_list.includes(Number(e.getAttribute('data-marketplace')))){
+        //                 e.checked = true;
+        //             }
+        //         })
+        //     } 
+        // }
+
+
+
+        if (data.program){
+            let program_list = data.program.replaceAll('[',' ').replaceAll(']',' ').split(',').filter(e=>e!==' ' || e!=='').map(e=>Number(e)).filter(e=>e!==0) ;
+            
+            selectedProgramsViewFunc(program_list);
+            // selected_programs_view.innerText = program_list;
+            // if (data.role_type === 'program' ) {
+                selected_programs_list = program_list;
+                const selectedProgramBtn  = document.querySelectorAll('.selectedProgramBtn');
+                const removeProgramBtn  = document.querySelectorAll('.removeProgramBtn');
+                selectedProgramBtn.forEach((e,i)=>{
+                    if ( selected_programs_list.includes(Number(e.getAttribute('data-id')))) {
+                        e.classList.add('hidden')
+                        // removeProgramBtn[i].classList.remove('hidden')
+                    }
+                })
+                console.log('program_list',selected_programs_list)
+            // }
+        }
+
+
+
+
+        function cnf(type, tar){
+            let empId = null;
+            let reporting_manager;
+            let user_role;
+            let employee_status;
+            let programListView = [];
+            let url;
+            let method;
+
+            if (type == 'update' ){empId =  data.id;}
+            const service = document.querySelectorAll('.service');
+            const inps = document.querySelectorAll('.inps')
+            data = {}
+            inps.forEach((e,i)=>{
+                if (e.localName === 'input'){
+                    if (e.type === 'text'){
+                        if (e.name === 'reporting_manager'){
+                            reporting_manager = e.value;
+                            data[e.name] = Number(e.getAttribute('data-id')) === 0 ? null : Number(e.getAttribute('data-id'));
+                        } else {
+                            data[e.name] = e.value
+                        }
+                    }
+                    if (e.type === 'checkbox'){
+                        const checkbox = document.querySelectorAll(`.${e.name}`)
+                        const checked_data = []
+                        checkbox.forEach(e=>{
+                            if (e.checked){
+                                checked_data.push(e.value)
+                            }
+                        })
+                        data[e.name] = checked_data
+                    }
+                }
+            })
+            inps.forEach(e=>{
+                if (type==='update'){
+                    if (e.localName === 'select'){
+                         if (e.name === 'user_role'){
+                            user_role = e.selectedOptions[0].innerText;}
+                         else if (e.name === 'employee_status'){employee_status = e.selectedOptions[0].innerText;   }
+                        data[e.name] = Number(e.value)
+                    }
+                } else if(type==='create'){
+                    if (e.localName === 'select'){
+                        if (e.name === 'user_role'){
+                            user_role = e.selectedOptions[0].innerText;
+                        }
+
+                        if (e.name === 'employee_status'){
+                            employee_status = 'none'
+                            data[e.name] = null
+                        } else {
+                            data[e.name] = Number(e.value)
+                        }
+                    }
+                }
+            })
+            
+            data['program'] = selected_programs_list;
+            if (type==='update'){
+                url = '{% url "user_update" id=0 %}'.replace(0,update.getAttribute('data-id'))
+                method = 'PUT'
+            } else if(type ==='create'){
+                url = '{% url "register" %}';
+                method = 'POST'
+            }
+
+            console.log('data (((())))', data)
+
+            // data.program.forEach(e=>{
+                main_dropdown_data.forEach(e=>{
+                    if (e.table==='program'){
+                        e.value.forEach(f=>{
+                            console.log(f);
+                            if ( data.program.includes(f.program.id) ) {
+                                programListView.push(`${f.segment.value} > ${f.service.value} > ${f.marketplace.value} > ${f.program.value}`)
+                            }
+                            
+                        })
+                    }
+                })
+
+            const popup = document.createElement('div');
+            popup.classList.value = 'popup h-96 w-96 fixed top-[50%] left-[50%] shadow-2xl bg-slate-200 translate-y-[-50%] translate-x-[-50%] rounded-xl overflow-hidden border border-slate-500 border-solid';
+            popup.innerHTML = `
+                <div class="h-[30px] w-full flex" >
+                    <div class=" h-full w-[calc(100%-30px)] bg-slate-700">
+                        <div class="h-full text-white capitalize flex justify-center items-center">Confirmation</div>
+                    </div>
+                    <div class=" h-full w-[30px] bg-red-500" onclick="cPP(event)" >
+                        <img src="/static/assets/images/close_button.png">
+                    </div>
+                </div>
+                <div class="h-[calc(100%-80px)] p-2 text-xs">
+                    <div class="h-2/4">
+                        <div class="flex"><div class="w-[35%]">Name</div><div class="w-[65%]">${data.name}</div></div>
+                        <div class="flex"><div class="w-[35%]">Mobile Number</div><div class="w-[65%]">${data.mobile_number}</div></div>
+                        <div class="flex"><div class="w-[35%]">Email</div><div class="w-[65%]">${data.email}</div></div>
+                        <div class="flex"><div class="w-[35%]">Reporting Manager</div><div class="w-[65%]">${reporting_manager}</div></div>
+                        <div class="flex"><div class="w-[35%]">User Role</div><div class="w-[65%]">${user_role}</div></div>
+                        <div class="flex"><div class="w-[35%]">Employee Status</div><div class="w-[65%]">${employee_status}</div></div>
+                    </div>
+                    <div class="h-2/4 bg-slate-300 rounded-xl shadow-xl p-3 overflow-auto">
+                        <ul >
+                            ${programListView.map(e=> `<li class="text-nowrap h-7">${e}</li>`).join('')}
+                        </ul>
+                    
+                    </div>
+                </div>
+                <div class="h-[50px] w-full flex justify-center items-center">
+                    <button class="btn btn-xs btn-success text-white capitalize confirm">${type}</button>
+                </div>
+            `
+            document.body.append(popup);
+
+            console.log('popup', popup);
+
+             popup.querySelector('.confirm').onclick = async function (){
+                let a = await ftN(url, method, {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(data))
+                if (a){
+                    poperFunction(a.status,a.message, a.status===200?true:false)
+                }
+             }
+             
+             
+            {% comment %} if (type === 'update'){
+                update.addEventListener('click', async (e)=>{
+                    let empId =  data.id;
+    
+                    e.preventDefault()
+                    const service = document.querySelectorAll('.service');
+                    const inps = popup.querySelectorAll('.inps')
+                    data = {}
+                    inps.forEach((e,i)=>{
+                        if (e.localName === 'input'){
+                            if (e.type === 'text'){
+                                if (e.name === 'reporting_manager'){
+                                    data[e.name] = Number(e.getAttribute('data-id')) === 0 ? null : Number(e.getAttribute('data-id'));
+                                } else {
+                                    data[e.name] = e.value
+                                }
+                            }
+                            if (e.type === 'checkbox'){
+                                const checkbox = document.querySelectorAll(`.${e.name}`)
+                                const checked_data = []
+                                checkbox.forEach(e=>{
+                                    if (e.checked){
+                                        checked_data.push(e.value)
+                                    }
+                                })
+                                data[e.name] = checked_data
+                            }
+                        }
+                    })
+                    inps.forEach(e=>{
+                        if (e.localName === 'select'){
+                            //if (e.name === 'employee_status'){
+                            //    data[e.name] = null
+                            //} else {
+                            console.log('data (((***)))', Number(e.value))
+                            data[e.name] = Number(e.value)
+                            //}
+                        }
+                    })
+                    // data['role_type'] = userServiceSelect;
+                    
+                    // if (userServiceSelect === 'marketplace') {
+                       // data['marketplace'] = Array.from(service).filter(e=>e.checked).map(e=>Number(e.getAttribute('data-marketplace'))) ;
+                       // data['program'] = []
+                    // } else if (userServiceSelect === 'program'){
+                       // data['marketplace'] = [];
+                        data['program'] = selected_programs_list;
+                    // }
+    
+                    let url = '{% url "user_update" id=0 %}'.replace(0,update.getAttribute('data-id'))
+                    
+                    function getCookies() {
+                        const cookies = document.cookie.split(';');
+                        const cookieObject = {};
+                        cookies.forEach(cookie => {
+                            const [key, value] = cookie.split('=').map(c => c.trim());
+                            cookieObject[key] = decodeURIComponent(value);
+                        });
+                        return cookieObject;
+                    }
+    
+                    let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(data))
+                    if (a){
+                        poperFunction(a.status,a.message, a.status===200?true:false)
+                    }
+                })
+            } else if(type === 'create') {
+                create.addEventListener('click', async(e)=>{
+                    e.preventDefault()
+                    const service = document.querySelectorAll('.service');
+                    const inps = popup.querySelectorAll('.inps')
+    
+                    data = {}
+                    inps.forEach((e,i)=>{
+                        if (e.localName === 'input'){
+                            if (e.type === 'text'){
+                                if (e.name === 'reporting_manager'){
+                                    data[e.name] = Number(e.getAttribute('data-id')) === 0 ? null : Number(e.getAttribute('data-id'));
+                                } else {
+                                    data[e.name] = e.value
+                                }
+                            }
+                            if (e.type === 'checkbox'){
+                                const checkbox = document.querySelectorAll(`.${e.name}`)
+                                const checked_data = []
+                                checkbox.forEach(e=>{
+                                    if (e.checked){
+                                        checked_data.push(e.value)
+                                    }
+                                })
+                                data[e.name] = checked_data
+                            }
+                        }
+                    })
+    
+                    inps.forEach(e=>{
+                        if (e.localName === 'select'){
+                            if (e.name === 'employee_status'){
+                                data[e.name] = null
+                            } else {
+                                data[e.name] = Number(e.value)
+                            }
+                        }
+                    })
+                    
+                    // if (userServiceSelect === 'marketplace') {
+                        // data['marketplace'] = Array.from(service).filter(e=>e.checked).map(e=> ({'segment': Number(e.getAttribute('data-segment')), 'service': Number(e.getAttribute('data-service')), 'marketplace': Number(e.getAttribute('data-marketplace'))}) )
+                       // data['marketplace'] = Array.from(service).filter(e=>e.checked).map(e=>Number(e.getAttribute('data-marketplace'))) ;
+                       // data['program'] = [] ;
+                    // } else if (userServiceSelect === 'program'){
+                        // data['marketplace'] = [];
+                        data['program'] = selected_programs_list;
+                    //}
+                    // data['role_type'] = userServiceSelect;
+
+                    let url = '{% url "user_registration" %}';
+                    function getCookies() {
+                        const cookies = document.cookie.split(';');
+                        const cookieObject = {};
+                    
+                        cookies.forEach(cookie => {
+                            const [key, value] = cookie.split('=').map(c => c.trim());
+                            cookieObject[key] = decodeURIComponent(value);
+                        });
+                        return cookieObject;
+                    }
+    
+                    let a = await ftN(url, 'POST', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(data))
+                    if (a){
+                        poperFunction(a.status,a.message, a.status===200?true:false)
+                    }
+                })
+            } {% endcomment %}
+        }
+
+
+        const create = document.querySelector('.create');
+        if (create){
+            create.addEventListener('click', (e)=>{
+                e.preventDefault();
+                cnf('create', create)
+            });
+        }
+
+
+        const update = document.querySelector('.update');
+        if (update){
+            update.addEventListener('click', (e)=>{
+                e.preventDefault();
+                cnf('update', update)
+            })
+        }
+
+    
+    
+        const close_btn = popup.querySelectorAll('.close_btn');
+        close_btn.forEach(e=>{
+            e.addEventListener('click',()=>{
+                popup.remove()
+            })
+        })
+    
+        const edit_toggle = popup.querySelector('.edit_toggle');
+        if (edit_toggle){
+
+            
+            edit_toggle.addEventListener('click',()=>{
+            const inps = document.querySelectorAll('.inps');
+        
+            inps.forEach(e=>{
+                if (!edit_toggle.checked){
+                e.disabled = true
+                } else {
+                e.disabled = false
+                }
+            })
+            })
+        }
+    }
+
+
+
+    const create_user = document.querySelector('.create_user');
+    create_user.addEventListener('click',()=>{
+        userEditPopUp('', 'Fill this form to create new user');
+    })
+    
+
+    function mainEditFunction (){
+
+    const view_edit = document.querySelectorAll('.view_edit');
+    view_edit.forEach(e=>{
+        e.addEventListener('click',()=>{
+            data = {
+            id : e.getAttribute('data-user-id'),
+            //  employee_id : e.getAttribute('data-employee_id'),
+            name : e.getAttribute('data-name'),
+            email : e.getAttribute('data-email'),
+            mobile_number : e.getAttribute('data-mobile-number'),
+            reporting_manager_id: e.getAttribute('data-reporting-manager-id'),
+            reporting_manager_name: e.getAttribute('data-reporting-manager-name'),
+            user_role_id : e.getAttribute('data-user-role-id') === '' ? null : e.getAttribute('data-user-role-id') ,
+            user_role : e.getAttribute('data-user-role') === '' ? null : e.getAttribute('data-user-role'),
+            // role_type : e.getAttribute('data-role-type'),
+            employee_status : Number(e.getAttribute('data-employee-status')),
+            // service : e.getAttribute('data-service'),
+            // marketplace : e.getAttribute('data-marketplace'),
+            // marketplace : e.getAttribute('data-marketplace'),
+            program : e.getAttribute('data-program'),
+            }
+            console.log('data', data)
+            userEditPopUp(data, ' Update User')
+        })
+    })
+
+    const archive_user = document.querySelectorAll('.archive_user');
+    archive_user.forEach(e=>{
+        e.addEventListener('click',()=>{
+            confirmationPopUp('archive user','are you sure you want to archive this user?',e.getAttribute('data-user-id'))
+            const capitalize = document.querySelectorAll('.confirm_btn');
+            capitalize.forEach(e=>{
+                e.addEventListener('click',()=>{
+                    window.location.href= `/archive_user?user_id=${e.getAttribute('data-user-id')}`
+                })
+            })
+        })
+    })
+
+    const restore_user = document.querySelectorAll('.restore_user');
+    restore_user.forEach(e=>{
+        e.addEventListener('click',()=>{
+            confirmationPopUp('archive user','are you sure you want to archive this user?',e.getAttribute('data-user-id'))
+            const capitalize = document.querySelectorAll('.confirm_btn');
+            capitalize.forEach(e=>{
+                e.addEventListener('click',()=>{
+                    window.location.href= `/restore_user?user_id=${e.getAttribute('data-user-id')}`
+                })
+            })
+        })
+    })
+
+} mainEditFunction()
+
+
+
+    const user_search_selection_submit = document.querySelector('.user_search_selection_submit');
+    user_search_selection_submit.addEventListener('click', async ()=>{
+
+        const user_search = document.querySelector('.user_search');
+        const user_search_selection = document.querySelector('.user_search_selection');
+
+        console.log(user_search.value, user_search_selection.value)
+
+        let url = '{% url "user_search" attribute="**" id="*" %}'.replaceAll('**', user_search_selection.value).replaceAll('*', user_search.value.trim().replaceAll(' ', '_'))
+        let a = await ftN(url, 'GET', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+        if (a){
+            const main_table = document.querySelector('.main_table')
+            main_table.innerHTML = ''
+            a.data.forEach(e=>{
+                const tr = document.createElement('tr')
+                tr.classList.value = 'border-b border-slate-200 view_edit cursor-pointer';
+                 
+                tr.setAttribute('data-user-id', e.id )
+                tr.setAttribute('data-name', e.name)
+                tr.setAttribute('data-email', e.email_id)
+                tr.setAttribute('data-mobile-number', e.mobile_number)
+                tr.setAttribute('data-user-role-id', e.user_role.length === 0 ? null : e.user_role[0].user_role_id)
+                tr.setAttribute('data-user-role', e.user_role.length === 0 ? null : e.user_role[0].user_role)
+                tr.setAttribute('data-reporting-manager-id', e.reporting_manager.id === null? '' : e.reporting_manager.id )
+                tr.setAttribute('data-reporting-manager-name', e.reporting_manager.name === null? '' : e.reporting_manager.name )
+                // tr.setAttribute('data-role-type', e.role_type )
+                tr.setAttribute('data-employee-status', e.employee_status.employee_status_id)
+                // tr.setAttribute('data-marketplace', `${e.marketplace}`)
+                tr.setAttribute('data-program', `${e.program}`)
+
+                tr.innerHTML = `
+
+                    <td class="capitalize">${e.name}</td>
+                    <td class="capitalize">${e.user_role.length == 0 ? '' : e.user_role[0].user_role.replaceAll('_',' ')}</td>
+                    <td class="capitalize flex">
+                        <div data-user-id="{{e.id}}" class='archive_user cursor-pointer h-7 w-7 flex justify-center items-center bg-red-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_delete_white.png" %}"></div>
+                    </td>
+                `
+                main_table.append(tr)
+            })
+
+            mainEditFunction()
+
+        } else {
+            poperFunction(a.status,a.message, a.status===200?true:false)
+        }
+    })
+
+    const clear_button = document.querySelector('.clear_button');
+    clear_button.addEventListener('click',()=>{
+        const user_search = document.querySelector('.user_search');
+        window.location.reload()
+    })
+
+
+
+</script>
+
+<script src="{% static "assets/js/tooltip.js" %}"></script>
+
+
+{% endblock  %}

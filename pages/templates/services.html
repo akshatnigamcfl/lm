@@ -1,0 +1,2304 @@
+{% extends "layout/layout.html" %}
+
+{% block page_title %}Service{% endblock  %}
+
+
+{% block page_body %}
+
+{% load static %}
+{% load poll_extras %}
+
+
+    <script src="{% static "assets/js/getcookies.js" %}"></script>
+    <script src="{% static "assets/js/poper.js" %}"></script>
+    <script src="{% static "assets/js/fetch.js" %}"></script>
+
+    <script>
+        const main_dropdown_data = [
+            {% for d in data %}
+            {% for k,v in d.items %}
+                { 'table': '{{k}}', 'value': [
+                    {% if k == 'segment' %}
+                        {% for i in v %}{'id': {{i.id}}, 'value': '{{i.segment}}' } ,{% endfor %},
+                
+                    {% elif k == 'service' %}
+                        {% for i in v %}{ 'segment': {'id': {{i.segment.id}}, 'value': '{{i.segment.segment}}'}, 'service': {'id': {{i.id}}, 'value': '{{i.service}}'} } ,{% endfor %},
+
+                    {% elif k == 'marketplace' %}
+                        {% for i in v %}{ 'segment': {'id': {{i.service.segment.id}}, 'value': '{{i.service.segment.segment}}'}, 'service': {'id': {{i.service.id}}, 'value': '{{i.service.service}}'} , 'marketplace': {'id': {{i.id}}, 'value': '{{i.marketplace}}'}, } ,{% endfor %},
+
+                    {% elif k == 'program' %}
+                        {% for i in v %} { 'segment': {'id': {{i.marketplace.service.segment.id}}, 'value': '{{i.marketplace.service.segment.segment}}'}, 'service': {'id': {{i.marketplace.service.id}}, 'value': '{{i.marketplace.service.service}}'}, 'marketplace': {'id': {{i.marketplace.id}}, 'value': '{{i.marketplace.marketplace}}'}, 'program': {'id': {{i.id}}, 'value': '{{i.program}}'},  } ,{% endfor %},
+                        {% endif %}
+                    ]},
+             {% endfor %}
+            {% endfor %}
+        ]
+
+
+        function interDependentFields(main_target, append_target, search_table, result_table){
+            main_target.addEventListener('change',()=>{
+                append_target.innerHTML = `<option selected disabled value=default class="capitalize">Select ${result_table}</option>`
+                console.log('append_target', main_dropdown_data)
+                main_dropdown_data.forEach(f=>{
+                    if(f.table === result_table){
+                        f.value.forEach(g=>{
+                            if (g[search_table].id == main_target.value) {
+                                    if (append_target.disabled){
+                                        append_target.disabled = false
+                                    }
+
+                                    const opt = document.createElement('option');
+                                    opt.value = g[result_table].id
+                                    opt.innerText = g[result_table].value
+                                    append_target.append(opt)
+                            }
+                        })
+                    }
+                })
+            })
+        }
+
+        function interDependentFieldsInput(main_target, append_target){
+            console.log(main_target, append_target)
+            main_target.addEventListener('change',()=>{
+                if (append_target.disabled){
+                    append_target.disabled = false
+                }
+            })
+        }
+
+        var selectedSegment;
+        var selectedService;
+        var selectedMarketplace;
+        var selectedProgram;
+
+    </script>
+
+
+<div class="w-full h-full px-4 flex flex-wrap justify-start">
+    {% with request.GET.type|default:'commercials' as parameter_value %}
+
+    {% comment %} {% if parameter_value == "commercials" %}
+    
+        <div class="w-full h-full p-1 rounded-3xl bg-gray-100">
+            
+            <div class="h-[50px] p-1 flex justify-end">
+                <div class="h-full w-60 px-4">
+                    <div role="tablist" class="tabs tabs-boxed">
+                        {% with request.GET|length as dict_length %}
+                            {% with request.GET.segment as parameter_value %}
+                                <a href="?segment=active{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'segment' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab text-xs {% if not parameter_value or parameter_value == 'active' %}tab-active{% endif %}">Active</a>
+                                <a href="?segment=archive{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'segment' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab text-xs {% if parameter_value == 'archive' %}tab-active{% endif %}" role="tab" class="tab">Archive</a>
+                            {% endwith %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="w-full h-[calc(100%-100px)] flex flex-col overflow-scroll p-2">
+                <div class="overflow-x-auto">
+                    <table class="table">
+                    <thead>
+                        {% if content != 'no data' %}  
+                            <tr>
+                                <th></th>
+                                <th>Segment</th>
+                                <th>Service</th>
+                                <th>Marketplace</th>
+                                <th>Program</th>
+                                <th>Action</th>
+                            </tr>
+                        {% else %}
+                            <div class="h-12 flex justify-center items-center bg-gray-200">no data</div>
+                        {% endif %}
+                    </thead>
+                    <tbody class="text-xs">
+
+                        {% if content != 'no data' %}
+
+
+                                {% with request.GET.type|default:'commercial' as parameter_value %}
+                                    {% for d in content %}
+
+                                        <tr class="border-b border-slate-200 shadow-sm hover:shadow-md">
+                                            <th class="p-1 capitalize">{{forloop.counter}}</th>
+                                            <td class="p-1 capitalize">{{d.program.marketplace.service.segment.segment}}</td>
+                                            <td class="p-1 capitalize">{{d.program.marketplace.service.service}}</td>
+                                            <td class="p-1 capitalize">{{d.program.marketplace.marketplace}}</td>
+                                            <td class="p-1 capitalize">{{d.program.program}}</td>
+                                            
+                                            <td class="p-1">
+                                                <div class="w-full h-full flex">
+                                                    {% with request.GET.segment as parameter_value %}
+                                                        {% if not parameter_value or parameter_value == 'active' %}
+                            
+                                                            
+                                                            <div 
+                                                            data-id="{{d.id}}"
+                                                            data-service-id={{d.service.id}}
+                                                            data-segment-id="{{d.segment.id}}"
+                                                            data-marketplace-id="{{d.marketplace.id}}"
+                                                            data-program-id="{{d.program.id}}"
+                                                            
+                                                            data-commercials = "{% for cd in d.commercials.all  %}{{cd.id}}::{{cd.commercials}}:::{% endfor %}"
+
+                                                            data-tip="View/Edit"
+                                                            class='edit tooltip-open tool_tip cursor-pointer h-7 w-7 flex justify-center items-center bg-green-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_view_white.png" %}"></div>
+                                                            <div data-id="{{d.id}}" data-tip="Archive" class='archive tooltip-open tool_tip cursor-pointer h-7 w-7 flex justify-center items-center bg-red-600  rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_delete_white.png" %}"></div>
+                                                        {% elif parameter_value and parameter_value == 'archive' %}
+                                                            <div data-id="{{d.id}}" data-tip="Restore" class='restore tooltip-open tool_tip cursor-pointer h-7 w-7 flex justify-center items-center bg-[#5BABE5] rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_restore_white.png" %}"></div>
+                                                        {% endif %}
+                                                    {% endwith %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endwith %}
+
+                        {% endif %}
+
+                    </tbody>
+                    </table>
+
+                </div>
+            </div>
+
+            <div class="flex justify-center items-center h-[50px]">
+                
+                {% if pages != 'no data' %}
+                    {% include 'layout/pagination.html' with data=content %}
+                {% endif %} 
+
+            </div>
+        </div>    
+
+        <script>
+
+
+        function newServicePopUp(data){
+    
+            const popup = document.createElement('div');
+            popup.classList.value = 'w-screen h-screen absolute top-0 left-0 flex justify-center items-center bg-[rgba(0,0,0,0.7)] '
+            popup.innerHTML = `
+            
+            <form action="${data ? '{% url "update_user_account" %}' : '{% url "create_user_account" %}'}" id="add_user" method="POST">
+                <div class="card w-[700px] h-[500px] bg-white text-neutral-content overflow-hidden">
+                    <div class="h-[35px] relative flex justify-center items-center text-white bg-slate-900">View/Edit</div>
+                        <img class="close_btn absolute h-6 w-6 top-[5px] right-[5px]" src="{% static "assets/images/close_button.png" %}">
+                    <div class="h-[40px] flex justify-between items-center text-white px-4 border-b bg-gray-200">
+                        <div class="text-slate-900 font-bold">Commecial Management</div>
+                        ${data?'<label class="flex justify-center text-slate-900"><span class="text-sm select-none">Edit</span><input type="checkbox" class="edit_toggle toggle ml-3" /><label>':'' }
+                    </div>
+                        <div class="h-[calc(100%-100px)] w-full flex justify-between flex-wrap p-3 overflow-y-scroll bg-gray-50 text-slate-900 text-xs">
+    
+                        {% csrf_token %}
+
+    
+                        <div class="w-[100%] h-10 flex my-1 ">
+                            <div class="flex items-center h-full w-1/4">Segment</div>
+                            <select ${data?'disabled':''} required class="inps h-full select_inp segment my-1 border w-3/4 px-2 rounded-xl capitalize text-slate-900" name="segment">
+                                <option disabled selected value="null">Select Segment</option>
+                                {% for s in segment %}<option value={{s.id}}>{{s}}</option>{% endfor %}
+                            </select> 
+                        </div>
+  
+                        
+                        <div class="w-[100%] h-10 flex my-1 ">
+                            <div class="flex items-center h-full w-1/4">Service</div>
+                            <select disabled required class="inps select_inp service my-1 border w-3/4 h-10 px-2 rounded-xl capitalize text-slate-900" name="service">
+                              <option disabled selected value="null">Select Service</option>
+                            </select>
+                        </div>
+
+
+                        <div class="w-[100%] h-10 flex my-1 ">
+                            <div class="flex items-center h-full w-1/4">Marketplace</div>
+                            <select disabled required class="inps select_inp marketplace my-1 border w-3/4 h-10 px-2 rounded-xl capitalize text-slate-900" name="marketplace">
+                              <option disabled selected value="null">Select Marketplace</option>
+                            </select>
+                        </div>
+
+  
+
+                        <div class="w-[100%] h-10 flex my-1 ">
+                            <div class="flex items-center h-full w-1/4">Program</div>
+                            <select disabled required class="inps select_inp program my-1 border w-3/4 h-10 px-2 rounded-xl capitalize text-slate-900" name="program">
+                              <option disabled selected value="null">Select Program</option>
+                            </select>
+                        </div>
+
+
+
+                        <div class="w-full my-3 bg-white h-80 border p-3 flex flex-col">
+                            
+                            <div class="h-[50px] w-full flex">
+                                <input ${data?'disabled':''} type="text" class="inps commercial_input h-full w-[90%] border border-slate-600 rounded-xl px-3" placeholder="Create Commercials"> 
+                                <div class="w-[10%] flex justify-center items-center">
+                                    <img class="add_commercial h-6 w-6 cursor-pointer" src="{% static "assets/images/add_circle_black.png" %}" >
+                                </div>
+                            </div>
+
+                            <div role="tablist" class=" tabs tabs-boxed mt-2">
+                                {% with request.GET|length as dict_length %}
+                                    {% with request.GET.segment as parameter_value %}
+                                        <a role="tab" data-tab="active" class="commercial_switch text-xs tab tab-active">Active</a>
+                                        <a role="tab" data-tab="archive" class="commercial_switch text-xs tab" role="tab" >Archive</a>
+                                    {% endwith %}
+                                {% endwith %}
+                            </div>
+
+                            <div class="h-[calc(100%-50px)] w-full bg-slate-100 mt-3 rounded-xl overflow-y-scroll">
+                                <ul class="fresh_commercials py-3 px-6 text-sm" data-tab="active" data-id=${data.id} >
+                                </ul>
+
+                                <ul class="fresh_commercials_archive py-3 px-6 text-sm" data-tab="archives" data-id=${data.id} >
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <button data-id=${data.id} class="inps ${data?'update':'create'} btn btn-success text-white">Create</button>
+                </div>
+            </form>
+            `
+
+
+            const segment_c = popup.querySelector('.segment') 
+            const marketplace_c = popup.querySelector('.marketplace') 
+            const service_c = popup.querySelector('.service')
+            const program_c = popup.querySelector('.program') 
+            const sub_button = popup.querySelector('.create')
+
+            interDependentFields(segment_c, service_c, 'segment', 'service')
+            interDependentFieldsInput(service_c, marketplace_c)
+
+            interDependentFields(service_c, marketplace_c, 'service', 'marketplace')
+            interDependentFieldsInput(service_c, program_c)
+            
+            interDependentFields(marketplace_c, program_c, 'marketplace', 'program')
+
+
+
+            function commercialAppend (data,target){
+                target.innerHTML=''
+                data.forEach(e=>{
+                    if (e !== ''){
+                        const fresh_commercials = popup.querySelector('.fresh_commercials');                    
+                        const li = document.createElement('li');
+                        li.classList.value="commercial_value_dv h-12 w-full flex items-center border-b border-gray-400"
+                        li.innerText = e.commercials_name
+                        li.innerHTML = `
+                            <input type="text" class="commercial_value px-3 w-[90%] h-10 rounded-xl border" value="${e.commercials_name}" data-id="${e.id}" >
+                            <div class="w-[10%] h-full flex justify-center items-center">
+                                <img class="h-3 w-3 cursor-pointer remove_commercial_value" src="{% static "assets/images/remove_black.png" %}">
+                            </div>`
+                            target.append(li)
+                    }
+                })
+            }
+
+            function removeCommercials(){
+                const remove_commercial_value = popup.querySelectorAll('.remove_commercial_value');
+                const commercial_value_dv = popup.querySelectorAll('.commercial_value_dv');
+                const commercial_value = popup.querySelectorAll('.commercial_value');
+                remove_commercial_value.forEach((e,i)=>{
+                    e.addEventListener('click',()=>{
+                        console.log(e)
+                        let url = '{% url "archive_commercials" id=0 %}'.replaceAll(0,commercial_value[i].getAttribute('data-id'))
+                        console.log('url',url)
+                    })
+                })
+            }
+
+
+                async function commercialSwitchAuto(){
+                    if (data){
+                        const fresh_commercials = popup.querySelector('.fresh_commercials');
+                        const fresh_commercials_archive = popup.querySelector('.fresh_commercials_archive');
+                        let url = '{% url "view_commercials_indv" type="**" id=0 %}'
+                        let token = getCookies().access
+                        fresh_commercials.classList.remove('hidden')
+                        fresh_commercials_archive.classList.add('hidden')
+
+                        url = url.replaceAll(0,fresh_commercials.getAttribute('data-id'))
+                        url = url.replaceAll('**',fresh_commercials.getAttribute('data-tab'))
+
+                        let a = await ftN(url,'GET', {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, '')
+                        if (a){
+                            commercialAppend(a.data.commercials, fresh_commercials)
+                        }
+                        removeCommercials()
+                    }
+                } commercialSwitchAuto()
+
+
+
+            const commercial_switch = popup.querySelectorAll('.commercial_switch')
+            commercial_switch[0].click()
+            
+            commercial_switch.forEach(e=>{
+                e.addEventListener('click',async()=>{
+                    commercial_switch.forEach(f=>{
+                        f.classList.remove('tab-active')
+                    })
+                    e.classList.add('tab-active')
+
+                    const fresh_commercials = document.querySelector('.fresh_commercials');
+                    const fresh_commercials_archive = document.querySelector('.fresh_commercials_archive');
+                    let url = '{% url "view_commercials_indv" type="**" id=0 %}'
+                    let token = getCookies().access
+
+                    if (e.getAttribute('data-tab')==='active'){
+
+                        commercialSwitchAuto()
+
+                    } else if (e.getAttribute('data-tab')==='archive') {
+                        fresh_commercials.classList.add('hidden')
+                        fresh_commercials_archive.classList.remove('hidden')
+                        
+                        console.log('url', fresh_commercials_archive )
+                        url = url.replaceAll(0,fresh_commercials_archive.getAttribute('data-id'))
+                        url = url.replaceAll("**",fresh_commercials_archive.getAttribute('data-tab'))
+
+
+                        let a = await ftN(url,'GET', {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, '')
+                        if (a){
+                            commercialAppend(a.data.commercials, fresh_commercials_archive)
+                        }
+                    }
+                })
+            })
+
+            const add_commercial = popup.querySelector('.add_commercial');
+            add_commercial.addEventListener('click', ()=>{
+                const commercial_input = popup.querySelector('.commercial_input');
+                const fresh_commercials = document.querySelector('.fresh_commercials');
+                
+                const li = document.createElement('li');
+                li.classList.value="commercial_value_dv h-12 w-full flex items-center border-b border-gray-400 flex"
+                li.innerHTML = `
+                    <input type="text" class="commercial_value px-3 w-[90%] h-10 rounded-xl border" value="${commercial_input.value}" >
+                    <div class="w-[10%] h-full flex justify-center items-center">
+                        <img class="h-3 w-3 cursor-pointer remove_commercial_value" src="{% static "assets/images/remove_black.png" %}">
+                    </div>
+                `
+                fresh_commercials.prepend(li)
+                commercial_input.value=''
+            })
+
+
+            {% for d in data %}
+                {% for key, value in d.items %}
+
+                    if (data.{{key}}){
+                        const {{key}} = popup.querySelector('.{{key}}');
+                        {% if key == 'service' %}const segment = popup.querySelector('.segment'){% elif key == 'marketplace' %}const service = popup.querySelector('.service'){% elif key == 'program' %}const marketplace = popup.querySelector('.marketplace'){% endif %}
+                        {% if key == 'segment' %}
+                            Array.from({{key}}.options).forEach(e=>{
+                        {% else %}
+
+                                const {{key}}_list = []
+                                main_dropdown_data.forEach(f=>{
+                                    if(f.table === '{{key}}'){
+                                        {{key}}.innerText = ''
+                                        f.value.forEach(g=>{
+
+                                            if (Number(data.{% if key == 'service' %}segment{% elif key == 'marketplace' %}service{% elif key == 'program' %}marketplace{% endif %}) === Number(g["{% if key == 'service' %}segment{% elif key == 'marketplace' %}service{% elif key == 'program' %}marketplace{% endif %}"].id )){
+                                                const opt = document.createElement('option');
+                                                opt.value = g['{{key}}'].id
+                                                opt.innerText = g['{{key}}'].value
+                                                {{key}}.append(opt)
+
+                                                if (Number(g['{{key}}'].id) == Number(data.{{key}})){
+                                                    opt.selected = true
+                                                }
+                                            }
+                                        })
+                                    }
+                                })
+
+
+                        {{key}}_list.forEach(e=>{
+
+                        {% endif %}
+                                if(e.value === 'null'){e.remove()}
+                                if (Number(e.value) === Number(data.{{key}})) {
+                                    const opt = document.createElement('option');
+                                    opt.selected = true
+                                    opt.disabled = true
+                                    opt.value = e.value
+                                    opt.innerText = e.innerText
+                                    {{key}}.prepend(opt)
+                                }
+                            })
+                    }
+
+                {% endfor %}
+            {% endfor %}
+    
+    
+    
+            popup.querySelector('#add_user').onsubmit = function() {
+              const select = popup.querySelector('.department');
+              if (select.value === "") {
+                return false;
+              }
+              return true;
+            };
+    
+            
+            document.body.append(popup)
+    
+
+           const create = document.querySelector('.create')
+           if (create){
+            create.addEventListener('click', async (e)=>{
+                e.preventDefault()
+                const inps = popup.querySelectorAll('.inps')
+                main_data = {}
+                inps.forEach((e,i)=>{
+
+                    if (e.localName === 'select'){
+                        main_data[e.name] = Number(e.value)
+                    }
+                })
+                const commercials = []
+                const commercial_value = document.querySelectorAll('.commercial_value');
+                commercial_value.forEach(e=>{
+                    commercials.push(e.value.toLocaleLowerCase().trim())
+                })
+                main_data['commercials'] = commercials
+
+                let url = '{% url "create_commercials" %}'
+                let a = await ftN(url, 'POST', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(main_data))
+                if (a){
+                    poperFunction(a.status,a.message, a.status===200?true:false)
+                } 
+                
+            })
+           } 
+    
+            const update = document.querySelector('.update');
+            if (update){
+                update.addEventListener('click', async (e)=>{
+                    e.preventDefault()
+                    const inps = popup.querySelectorAll('.inps')
+                    main_data = {}
+                    inps.forEach((e,i)=>{
+    
+                        if (e.localName === 'select'){
+                            main_data[e.name] = Number(e.value)
+                        }
+                    })
+                    const commercials = []
+                    const commercial_value = document.querySelectorAll('.commercial_value');
+                    commercial_value.forEach(e=>{
+                        commercials.push({ 'id': e.getAttribute('data-id'), 'commercials_name':e.value.trim()})
+                    })
+
+                    main_data['commercials'] = commercials
+                    let url = '{% url "edit_commercials" id=0 %}'.replace(0,update.getAttribute('data-id'))
+                    let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(main_data))
+                    if (a){
+                        poperFunction(a.status,a.message, a.status===200?true:false)
+                    } 
+    
+                })
+            }
+        
+            const close_btn = popup.querySelectorAll('.close_btn');
+            close_btn.forEach(e=>{
+                e.addEventListener('click',()=>{
+                    popup.remove()
+                })
+            })
+        
+            const edit_toggle = popup.querySelector('.edit_toggle');
+            if (edit_toggle){
+                edit_toggle.addEventListener('click',()=>{
+                  const inps = document.querySelectorAll('.inps');
+                
+                  inps.forEach(e=>{
+                    if (!edit_toggle.checked){
+                      e.disabled = true
+                    } else {
+                      e.disabled = false
+                    }
+                  })
+                })
+            }
+        
+            }
+
+
+            const create_new_service = document.querySelector('.create_new_service');
+            create_new_service.addEventListener('click',()=>{
+                newServicePopUp('')
+            })
+
+
+
+            const edit = document.querySelectorAll('.edit');
+            edit.forEach(e=>{
+                e.addEventListener('click',()=>{
+                    const commercial_filt = [];
+                    commercials = e.getAttribute('data-commercials').split(':::').forEach(e=>{
+                        if (e !== ''){
+                            const commercial_obj = {}
+                            commercial_obj['id'] = e.split('::')[0]
+                            commercial_obj['commercials_name'] = e.split('::')[1]
+                            commercial_filt.push(commercial_obj)
+                        } 
+                    })
+                    data = {
+                        'id': e.getAttribute('data-id'),
+                        'segment': e.getAttribute('data-segment-id'),
+                        'service': e.getAttribute('data-service-id'),
+                        'marketplace': e.getAttribute('data-marketplace-id'),
+                        'program': e.getAttribute('data-program-id'),
+                        //'sub_program': e.getAttribute('data-sub-program-id'),
+                        'commercials': commercial_filt
+                    }
+
+                    newServicePopUp(data)
+                })
+                
+            })
+
+            const archive = document.querySelectorAll('.archive');
+            archive.forEach(e=>{
+                e.addEventListener('click',async()=>{
+                    let url = '{% url "archive_commercials" id=0 %}'.replaceAll(0,e.getAttribute('data-id'));
+                    let a = await ftN(url,'DELETE', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+                    if (a){
+                        poperFunction(a.status, a.message, a.status===200?true:false)
+                    }
+                })
+            })
+            
+            const restore = document.querySelectorAll('.restore');
+            restore.forEach(e=>{
+                e.addEventListener('click',async()=>{
+                    let url = '{% url "restore_commercials" id=0 %}'.replaceAll(0,e.getAttribute('data-id'));
+                    console.log('url',url)
+                    let a = await ftN(url,'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+                    if (a){
+                        poperFunction(a.status, a.message, a.status===200?true:false)
+                    }
+                })
+            })
+
+        </script>
+
+    {% elif parameter_value == "manage_service" %} {% endcomment %}
+
+        <script src="{% static "assets/js/popup.js" %}"></script>
+
+        <script>
+            function highlighter(data, target){
+                data.forEach(e=>{
+                    e.parentElement.classList.remove('bg-slate-400')
+                })
+
+                target.parentElement.classList.add('bg-slate-400')
+            }
+
+            function defineContainers(){
+                const segment_container = document.querySelector('.segment_container');
+                const service_container = document.querySelector('.service_container');
+                const marketplace_container = document.querySelector('.marketplace_container');
+                const program_container = document.querySelector('.program_container');
+                const commercial_main_dv = document.querySelector('.commercial_main_dv');
+
+                return { 'segment': segment_container, 'service': service_container, 'marketplace': marketplace_container, 'program': program_container, 'commercial_main_dv': commercial_main_dv }
+            }
+
+
+            async function fetchCommercials(url){
+                let a = await ftN( url , 'GET', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '' )
+                return a;
+            }
+
+
+                async function getActiveCommercials(id){
+                    try{
+                        let a = await fetchCommercials('{% url "active_commercials" program_id=0 %}'.replaceAll(0,id))
+                        
+                        if (a){
+                            const commercials_list = document.querySelector('.commercials_list');
+                            commercials_list.innerHTML = '';
+                            a.data.forEach(e=>{
+                                renderCommercials(e, id)
+                            })
+                            // poperFunction(a.status, a.mmessage, false )
+                        }
+                    } catch (e) {
+                        console.log(e)
+                    }
+                };
+
+                async function getInActiveCommercials(id){
+                    try{
+                        let a = await fetchCommercials('{% url "inactive_commercials" program_id=0 %}'.replaceAll(0,id))
+
+                        if (a){
+                            const archived_commercials_list = document.querySelector('.archived_commercials_list');
+                            archived_commercials_list.innerHTML = '';
+                            a.data.forEach(e=>{
+                                const li = document.createElement('li');
+                                li.classList.value = 'h-6 w-full flex items-center my-1'
+                                li.innerHTML = `
+                                    <div class="w-[calc(100%-24px)] h-full p-1 bg-white rounded-l-lg" data-commercial-id=${e.id} >${e.value}</div>
+                                    <div class="restore_commercial w-6 h-full flex justify-center p-1 bg-[url('{% static "assets/images/action_restore_white.png" %}')] bg-center bg-no-repeat items-center cursor-pointer bg-blue-600 rounded-r-lg" data-commercial-id=${e.id} >
+                                    </div>`;
+                                archived_commercials_list.append(li);
+
+                                let restore_commercialBtn = li.querySelector('.restore_commercial');
+                                restore_commercialBtn.addEventListener('click', restoreCommercial)
+                                restore_commercialBtn.myParam = id;
+                
+                            })
+                        }
+                    } catch (e) {
+                        console.log(e);
+                    }
+                }
+
+        </script>
+
+
+
+        <div class="flex w-full h-full">
+            <div class="w-[60%] flex  overflow-x-auto border-r">
+
+            {% for d in data %}
+                {% for key,value in d.items %}
+    
+                    <div class="w-1/4 h-full border {{key}}_container {% if key != 'segment' %}hidden{% endif %} ">
+                        <div class="w-auto h-full p-2 bg-gray-50">
+
+                            <div class="h-[50px] p-1 flex items-center">
+                                <div class="h-full w-full text-base font-bold flex justify-start items-center capitalize">{{key|customreplacespace:'_'}}</div>
+                                <img class="w-6 h-6 cursor-pointer add_{{key}}" src="{% static "assets/images/add_circle_black.png" %}">
+                                {% comment %} <div class="flex justify-end"><button class="add_segment btn btn-success text-white h-[2rem] min-h-[2rem] text-xs">Add Segment</button></div> {% endcomment %}
+                            </div>
+                            {% comment %} <div class=" w-full px-4 flex">
+                                <div role="tablist" class="tabs tabs-boxed w-full">
+
+
+                                    {% with request.GET|length as dict_length %}
+                                            {% with request.GET.segment|default:'active' as parameter_value_segment %}
+                                            {% with request.GET.service|default:'active' as parameter_value_service %}
+                                            {% with request.GET.marketplace|default:'active' as parameter_value_marketplace %}
+                                            {% with request.GET.program|default:'active' as parameter_value_program %}
+
+                                                <a href="?{{key}}=active{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != key %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" 
+                                                role="tab" class="tab text-xs 
+                                                
+                                                    {% if key == 'segment' %}
+                                                        {% if parameter_value_segment == 'active' %}tab-active{% endif %}">Active</a>
+                                                    {% elif key == 'service' %}
+                                                        {% if parameter_value_service == 'active' %}tab-active{% endif %}">Active</a>
+                                                    {% elif key == 'marketplace' %}
+                                                        {% if parameter_value_marketplace == 'active' %}tab-active{% endif %}">Active</a>
+                                                    {% elif key == 'program' %}
+                                                        {% if parameter_value_program == 'active' %}tab-active{% endif %}">Active</a>                              
+                                                    {% endif %}
+                                                
+                                                <a href="?{{key}}=archive{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != key %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" 
+                                                role="tab" class="tab text-xs 
+
+                                                    {% if key == 'segment' %}
+                                                        {% if parameter_value_segment == 'archive' %}tab-active{% endif %}">Archive</a>
+                                                    {% elif key == 'service' %}
+                                                        {% if parameter_value_service == 'archive' %}tab-active{% endif %}">Archive</a>
+                                                    {% elif key == 'marketplace' %}
+                                                        {% if parameter_value_marketplace == 'archive' %}tab-active{% endif %}">Archive</a>
+                                                    {% elif key == 'program' %}
+                                                        {% if parameter_value_program == 'archive' %}tab-active{% endif %}">Archive</a>                          
+                                                    {% endif %}
+
+                                            {% endwith %}                                        
+                                            {% endwith %}                                        
+                                            {% endwith %}                                        
+                                            {% endwith %}                                        
+                                        
+
+                                    {% endwith %}
+                                    
+                                </div>
+                            </div> {% endcomment %}
+                            <div class="w-full h-[calc(100%-60px)] flex flex-col">
+
+                                <div class="overflow-x-auto">
+
+                                    <table class="table">
+                                    <!-- head -->
+                                    <thead>
+                                        <tr>
+                                        {% if data != 'no data' %}
+
+
+                                            {% if key == 'segment' %}
+                                                <th class="p-1">Segment</th>
+                                            {% endif %}
+                                            {% if key == 'service' %}
+                                                <th class="p-1">Service</th>
+                                            {% endif %}
+                                            {% if key == 'marketplace' %}
+                                                <th class="p-1">Marketplace</th>
+                                            {% endif %}
+                                            {% if key == 'program' %}
+                                                <th class="p-1">Program</th>
+                                            {% endif %}
+                                                <th class="p-1">Action</th>
+                                        </tr>
+                                        {% else %}
+                                        <div class="h-12 flex justify-center items-center bg-gray-200">no data</div>
+                                        {% endif %}
+                                    </thead>
+                                    <tbody class="text-xs">
+
+                                        {% if data != 'no data' %}
+                                            {%for d in value%}
+
+                                                <tr class="border-b border-slate-200 shadow-sm hover:shadow-md">
+
+                                                    {% if key == 'segment' %}
+                                                        <td class="p-1 capitalize cursor-pointer {{key}}_item" data-id="{{d.id}}" >{{d.segment|customreplacespace:"_"}}</td>
+                                                    {% elif key == 'service' %}
+                                                        <td class="p-1 capitalize cursor-pointer {{key}}_item" data-segment-id="{{d.segment.id}}", data-id="{{d.id}}">{{d.service|customreplacespace:"_"}}</td>                                                    
+                                                    {% elif key == 'marketplace' %}
+                                                        <td class="p-1 capitalize cursor-pointer {{key}}_item" data-service-id="{{d.service.id}}" data-id="{{d.id}}"  data-id="{{d.data}}">{{d.marketplace|customreplacespace:"_"}}</td>
+                                                    {% elif key == 'program' %}
+                                                        <td class="edit_{{key}} p-1 capitalize cursor-pointer {{key}}_item" data-marketplace-id="{{d.marketplace.id}}" 
+
+                                                            data-id="{{d.id}}"
+                                                            data-segment="{{d.marketplace.service.segment.id}}"
+                                                            data-service="{{d.marketplace.service.id}}"
+                                                            data-marketplace="{{d.marketplace.id}}"
+                                                            data-program="{{d.program}}"
+                                                            data-service-type="{{d.service_type.id}}"
+                                                            data-comments = '{{d.comments}}'
+                                                            data-paid-by="{{d.paid_by.id}}"
+                                                            data-payment-model="{{d.payment_model.id}}"
+                                                            data-payment-terms="{{d.payment_terms.id}}"
+                                                            data-mou-required = '{{d.mou_required}}'
+                                                            data-service-validity = '{{d.service_validity}}'
+
+                                                        data-id="{{d.data}}">{{d.program|customreplacespace:"_"}}</td>
+                                                    {% endif %}
+
+                                                    {% comment %} <td class="p-1 capitalize">{{d.segment|customreplacespace:"_"}}</td> {% endcomment %}
+                                                    <td class="p-1">
+                                                        <div class="w-full h-full flex">            
+                                                            {% with request.GET.type as parameter_value %}
+                                                                {% if request.GET.segment|default:'active' == 'active' and key == 'segment' or request.GET.marketplace|default:'active' == 'active' and key == 'marketplace' or request.GET.service|default:'active' == 'active' and key == 'service' or request.GET.program|default:'active' == 'active' and key == 'program' %}
+                                                                
+                                                                {% if key != 'program' %}                                                        
+                                                                        <div data-id="{{d.id}}" 
+                                                                        {% if key == 'segment' %}
+                                                                            data-segment="{{d.segment}}" 
+                                                                        {% elif key == 'service' %}
+                                                                            data-segment="{{d.segment.id}}"
+                                                                            data-service="{{d.service}}"
+                                                                        {% elif key == 'marketplace' %}
+                                                                            data-segment="{{d.service.segment.id}}"
+                                                                            data-service="{{d.service.id}}"
+                                                                            data-marketplace="{{d.marketplace}}"
+                                                                        {% elif key == 'program' %}
+                                                                            data-segment="{{d.marketplace.service.segment.id}}"
+                                                                            data-service="{{d.marketplace.service.id}}"
+                                                                            data-marketplace="{{d.marketplace.id}}"
+                                                                            data-program="{{d.program}}"
+                                                                            data-service-type="{{d.service_type.id}}"
+                                                                            data-comments = '{{d.comments}}'
+                                                                            data-paid-by="{{d.paid_by.id}}"
+                                                                            data-payment-model="{{d.payment_model.id}}"
+                                                                            data-payment-terms="{{d.payment_terms.id}}"
+                                                                            data-mou-required = '{{d.mou_required}}'
+                                                                            data-service-validity = {{d.service_validity}}
+                                                                        {% endif %}
+
+                                                                        data-tip="View/Edit"
+                                                                        class='tooltip-open tool_tip edit_{{key}} cursor-pointer h-4 w-4 flex justify-center items-center bg-green-600 rounded-md mx-0.5 p-0.5'><img src="{% static "assets/images/action_view_white.png" %}"></div>
+
+                                                                    {% endif %}
+
+                                                                    <div data-id="{{d.id}}" 
+                                                                    
+                                                                    {% if key == 'segment' %}
+                                                                        data-segment="{{d.segment}}" 
+                                                                    {% elif key == 'service' %}
+                                                                        data-segment="{{d.segment.id}}"
+                                                                        data-service="{{d.service}}"
+                                                                    {% elif key == 'marketplace' %}
+                                                                        data-segment="{{d.service.segment.id}}"
+                                                                        data-service="{{d.service.id}}"
+                                                                        data-marketplace="{{d.marketplace}}"
+                                                                    {% elif key == 'program' %}
+                                                                        data-segment="{{d.marketplace.service.segment.id}}"
+                                                                        data-service="{{d.marketplace.service.id}}"
+                                                                        data-marketplace="{{d.marketplace.id}}"
+                                                                        data-program="{{d.program}}"
+                                                                        data-service-type="{{d.service_type.id}}"
+                                                                        data-payment-model="{{d.payment_model.id}}"
+                                                                        data-payment-terms="{{d.payment_terms.id}}"
+                                                                        data-service-validity="{{d.service_validity}}"
+                                                                        data-comments = '{{d.comments}}'
+                                                                    {% endif %}
+                                                                    
+                                                                    data-tip='Archive'
+                                                                    class='archive_{{key}} tooltip-open tool_tip cursor-pointer h-4 w-4 flex justify-center items-center bg-red-600 rounded-md mx-0.5 p-0.5'><img src="{% static "assets/images/action_delete_white.png" %}"></div>
+
+
+
+                                                                    {% elif request.GET.segment == 'archive' and key == 'segment' or request.GET.marketplace == 'archive' and key == 'marketplace' or request.GET.service == 'archive' and key == 'service' or request.GET.program == 'archive' and key == 'program' %}
+                                                                    <div data-id="{{d.id}}" 
+                                                                    
+                                                                    {% if key == 'segment' %}
+                                                                        data-segment="{{d.segment}}" 
+                                                                    {% elif key == 'service' %}
+                                                                        data-segment="{{d.segment.id}}"
+                                                                        data-service="{{d.service}}"
+                                                                    {% elif key == 'marketplace' %}
+                                                                        data-segment="{{d.service.segment.id}}"
+                                                                        data-service="{{d.service.id}}"
+                                                                        data-marketplace="{{d.marketplace}}"
+                                                                    {% elif key == 'program' %}
+                                                                        data-segment="{{d.marketplace.service.segment.id}}"
+                                                                        data-service="{{d.marketplace.service.id}}"
+                                                                        data-marketplace="{{d.marketplace.id}}"
+                                                                        data-program="{{d.program}}"
+                                                                        data-service-type="{{d.service_type.id}}"
+                                                                        data-payment-model="{{d.payment_model.id}}"
+                                                                        data-payment-terms="{{d.payment_terms.id}}"
+                                                                        data-service-validity="{{d.service_validity}}"
+                                                                        data-comments = '{{d.comments}}'    
+                                                                    {% endif %}
+
+                                                                    data-tip="Restore"
+                                                                    class='restore_{{key}} tooltip-open tool_tip cursor-pointer h-4 w-4 flex justify-center items-center bg-[#5BABE5] rounded-md mx-0.5 p-0.5'><img src="{% static "assets/images/action_restore_white.png" %}"></div>
+                                                                {% endif %}
+                                                            {% endwith %}
+                                                    </div>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endif %}
+
+                                    </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                        
+                        <script>
+
+                            const {{key}}_item = document.querySelectorAll('.{{key}}_item')
+                            {{key}}_item.forEach(e=>{
+                                e.addEventListener('click', ()=>{
+
+                                    highlighter({{key}}_item, e)
+                                    let containers = defineContainers();
+                                    
+                                    {% if key == 'segment' %}
+
+                                        selectedSegment = e.getAttribute('data-id');
+
+                                        if (containers.service.classList.value.includes('hidden')){
+                                            containers.service.classList.remove('hidden');
+                                        }
+
+                                        containers.marketplace.classList.add('hidden');
+                                        containers.program.classList.add('hidden');
+                                        containers.commercial_main_dv.classList.add('hidden');
+
+                                        const service_list = document.querySelectorAll('.service_item');
+                                        service_list.forEach(f=>{
+                                            f.parentElement.classList.add('hidden');
+                                        })
+                                        service_list.forEach(f=>{
+                                            if (Number(f.getAttribute('data-segment-id')) === Number(e.getAttribute('data-id'))){
+                                                f.parentElement.classList.remove('hidden');
+                                            }
+                                        })
+
+                                    {% elif key == 'service' %}
+
+                                        selectedService = e.getAttribute('data-id');
+
+                                        if (containers.marketplace.classList.value.includes('hidden')){
+                                            containers.marketplace.classList.remove('hidden');
+                                        }
+
+                                        containers.program.classList.add('hidden');
+                                        containers.commercial_main_dv.classList.add('hidden');
+
+                                        const marketplace_list = document.querySelectorAll('.marketplace_item');
+                                        marketplace_list.forEach(f=>{
+                                            f.parentElement.classList.add('hidden');
+                                        })
+                                        marketplace_list.forEach(f=>{
+                                            if (Number(f.getAttribute('data-service-id')) === Number(e.getAttribute('data-id'))){
+                                                f.parentElement.classList.remove('hidden');
+                                            }
+                                        })
+
+                                    {% elif key == 'marketplace' %}
+
+                                        selectedMarketplace = e.getAttribute('data-id');
+
+                                        if (containers.program.classList.value.includes('hidden')){
+                                            containers.program.classList.remove('hidden');
+                                        }
+
+                                        containers.commercial_main_dv.classList.add('hidden');
+
+                                        const program_list = document.querySelectorAll('.program_item');
+                                        program_list.forEach(f=>{
+                                            f.parentElement.classList.add('hidden');
+                                        })
+                                        program_list.forEach(f=>{
+                                            if (Number(f.getAttribute('data-marketplace-id')) === Number(e.getAttribute('data-id'))){
+                                                f.parentElement.classList.remove('hidden');
+                                            }
+                                        })
+
+                                    {% endif  %}
+                                })
+                            })
+
+                            
+
+                            const add_{{key}} = document.querySelector('.add_{{key}}')
+                            add_{{key}}.addEventListener('click',()=>{
+                                const popup = addPopUp('auto', '96', 'Create {{key}}')
+                                popup.innerHTML = `<div class="flex flex-col w-full">
+                                {% if key == 'segment' %}
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4">Segment</span>
+                                        <input type="text" placeholder="Segment" class="w-3/4 segment_input input input-bordered text-xs h-8 max-w-xs" />
+                                    </div>
+                                    <div class="flex justify-center"><button class="create_new_service my-4 justify-self-end btn btn-success btn-sm text-white text-xs">Create Segment</button></div>
+
+
+                                {% elif key == 'service' %}
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Segment</span>
+                                        <select id="segment" name="segment" class="select select_segment inps w-3/4 capitalize h-8 min-h-8 select-bordered max-w-xs text-xs">
+                                            <option disabled selected value=default>Select Segment</option>
+                                            {% for s in segment %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Service</span>
+                                        <input id="service" type="text" placeholder="Service" name="service" class="w-3/4 service_input inps input input-bordered h-8 max-w-xs text-xs" />
+                                    </div>
+                                    <div class="flex justify-center"><button class="create_new_service my-6 justify-self-end btn btn-success btn-sm text-white text-xs">Create Service</button></div>
+
+
+
+                                {% elif key == 'marketplace' %}
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Segment</span>
+                                        <select id="segment" name="segment" class="select select_segment inps w-3/4 capitalize select-bordered h-8 min-h-8 max-w-xs text-xs">
+                                            <option disabled selected value=default>Select Segment</option>
+                                            {% for s in segment %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Service</span>
+                                        <select id="service" name="service" disabled class="select select_service inps w-3/4 capitalize select-bordered h-8 min-h-8 max-w-xs text-xs">
+                                            <option disabled selected value=default>Select Service</option>
+                                            {% comment %} {% for s in service %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %} {% endcomment %}
+                                        </select>
+                                    </div>
+
+
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Marketplace</span>
+                                        <input type="text" placeholder="Marketplace" name="marketplace" class="w-3/4 marketplace_input inps input input-bordered h-8 max-w-xs text-xs" />
+                                    </div>
+                                    
+                                    <div class="flex justify-center"><button class="create_new_service my-4 justify-self-end btn btn-success btn-sm text-white text-xs">Create marketplace</button></div>
+                                    
+
+
+                                {% elif key == 'program' %}
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Segment</span>
+                                        <select id="segment" name="segment" class="select select_segment inps w-3/4 h-8 min-h-8 capitalize select-bordered max-w-xs text-xs">
+                                            <option disabled selected value=default>Select Segment</option>
+                                            {% for s in segment %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Service</span>
+                                        <select id="service" name="service" disabled class="select select_service inps w-3/4 h-8 min-h-8 capitalize select-bordered max-w-xs text-xs">
+                                            <option disabled selected value=default>Select Service</option>
+                                            {% comment %} {% for s in service %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %} {% endcomment %}
+                                        </select>
+                                    </div>
+
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Marketplace</span>
+                                        <select id="marketplace" name="marketplace" disabled class="select select_marketplace inps w-3/4 h-8 min-h-8 capitalize select-bordered max-w-xs text-xs">
+                                            <option disabled selected value=default>Select Marketplace</option>
+                                            {% comment %} {% for s in marketplace %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %} {% endcomment %}
+                                        </select>
+                                    </div>
+
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Program</span>
+                                        <input id="program" type="text" placeholder="Program" disabled name="program" class="w-3/4 h-8 program_input inps input input-bordered h-8 max-w-xs text-xs" />
+                                    </div>
+
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Paid By</span>
+                                        <select id="paid_by_pop" name="paid_by" class="select select_paid_by inps w-3/4 h-8 min-h-8 capitalize select-bordered max-w-xs text-xs">
+                                            <option disabled selected value=default>Select Paid By</option>
+                                            {% for s in paid_by %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Mou Required</span>
+                                        <input id="mou_required_pop" type="checkbox" checked=true placeholder="Mou Required" class="inps text-xs px-2 h-3 w-3 ml-2 border rounded-xl" name="mou_required">
+                                    </div>
+
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Service Validity</span>
+                                        <input id="service_validity_pop" type="number" placeholder="(Number of Days)" name="service_validity" class="w-3/4 h-8 service_validity_input inps input input-bordered h-8 max-w-xs text-xs" />
+                                    </div>
+                                    
+
+                                    {% comment %} <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Service Type</span>
+                                        <select id="service_type" name="service_type" class="select select_service_type inps w-3/4 h-8 min-h-8 capitalize select-bordered max-w-xs text-xs">
+                                            <option disabled selected value=default>Select Service Type</option>
+                                            {% for s in service_type %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Payment Model</span>
+                                        <input id="payment_model" type="text" placeholder="Payment Model" name="payment_model" class="w-3/4 h-8 payment_model_input inps input input-bordered max-w-xs text-xs" />
+                                    </div>
+
+                                    <div class="flex w-full flex items-center my-1">
+                                        <span class="capitalize text-xs w-1/4 text-xs">Comments</span>
+                                        <textarea id="comments" placeholder="Comments" name="comments" class="w-3/4 p-4 comments_input resize-none inps input input-bordered h-16 max-w-xs text-xs"></textarea>
+                                    </div> {% endcomment %}
+
+
+
+                                    <div class="flex justify-center"><button class="create_new_service my-6 justify-self-end btn btn-success btn-sm text-white text-xs">Create Service</button></div>
+
+                                {% endif %}
+                                </div>`
+
+
+                                const segment = popup.querySelector('#segment') 
+                                const marketplace = popup.querySelector('#marketplace') 
+                                const service = popup.querySelector('#service')
+                                const program = popup.querySelector('#program')
+
+                                const customer_type = popup.querySelector('#customer_type')
+                                const payment_model = popup.querySelector('#payment_model')
+                                const comments = popup.querySelector('#comments')
+
+                                const segmentList = document.querySelectorAll('.segment_item');
+
+                                // console.log('segmentList', selectedSegment);
+
+                                {% if key == 'service' or key == 'marketplace' or key == 'program' %}
+
+                                    Array.from(segment.options).forEach(e=> {e.selected = Number(e.value) === Number(selectedSegment) ? true : false;})
+                                    // Array.from(segment.options).forEach((e,i)=>{if (Number(e.value) === Number(selectedSegment)){e.selected = true;}})
+                                
+                                {% endif %}
+
+                                {% if key == 'marketplace' or key == 'program' %}
+
+
+                                // console.log('selectedService', selectedService);
+                                // console.log('segment',segment, service)
+                                    interDependentFields(segment, service, 'segment', 'service')
+                                    interDependentFieldsInput(segment, service)
+
+                                    // console.dir(service)
+                                    // console.dir(main_dropdown_data)
+                                    main_dropdown_data.filter(e=>e.table==='service').map(e=>e.value)[0].filter(e=>e.segment.id===Number(selectedSegment)).map(e=>e.service).forEach(e=>{
+                                        if (service.disabled === true){service.disabled = false;}
+                                        const opt = document.createElement('option');
+                                        opt.value = Number(e.id);
+                                        opt.innerText = e.value
+                                        service.append(opt);
+                                    })
+                                    Array.from(service.options).forEach(e=> {e.selected = Number(e.value) === Number(selectedService) ? true : false;})
+                                
+                                {% endif %}
+                                    
+                                {% if key == 'program' %}
+                                    // console.log('selectedMarketplace', selectedMarketplace);
+
+                                    main_dropdown_data.filter(e=>e.table==='marketplace').map(e=>e.value)[0].filter(e=>e.service.id===Number(selectedService)).map(e=>e.marketplace).forEach(e=>{
+                                        if (marketplace.disabled === true){marketplace.disabled = false;}
+                                        if (program.disabled === true){program.disabled = false;}
+                                        const opt = document.createElement('option');
+                                        opt.value = Number(e.id);
+                                        opt.innerText = e.value
+                                        marketplace.append(opt);
+                                    })
+                                    Array.from(marketplace.options).forEach(e=> {e.selected = Number(e.value) === Number(selectedMarketplace) ? true : false;})
+
+                                    interDependentFields(service, marketplace, 'service', 'marketplace')
+                                    interDependentFieldsInput(marketplace, program)
+                                {% endif %}
+                                
+
+
+                                const create_new_service = document.querySelector('.create_new_service');
+                                create_new_service.addEventListener('click', async()=>{ 
+                                    const {{key}}_input = popup.querySelector('.{{key}}_input');
+
+                                {% if key == 'segment' %}
+                                    if (segment_input.value!==''){
+                                        let url = '{% url "create_services" type="segment" %}'
+                                        let a = await ftN(url, 'POST', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify({'segment': segment_input.value }))
+                                    } else {
+                                        segment_input.classList.add('border')
+                                        segment_input.classList.add('border-red-700')
+                                    }
+                                {% else %}
+                                    let data = {}
+                                    const inps = popup.querySelectorAll('.inps');
+                                    inps.forEach(e=>{
+
+
+                                        if (e.name === {% if key == 'service' %}'segment'{% elif key == 'marketplace' %}'service'{% elif key == 'program' %}'marketplace' || e.name==='service_type'{% endif %}){
+                                            if (e.value === 'default'){
+                                                e.classList.add('border')
+                                                e.classList.add('border-red-700')
+                                            } else {
+                                                data[e.name] = Number(e.value)
+                                            }
+                                        } else if (e.name === {% if key == 'service' %}'service'{% elif key == 'marketplace' %}'marketplace'{% elif key == 'program' %}'program'  || e.name==='payment_model' || e.name==='comments' {% endif %}){
+                                            if (e.value === ''){
+                                                e.classList.add('border')
+                                                e.classList.add('border-red-700')
+                                            } else {
+                                                data[e.name] = e.value
+                                            }
+                                        }
+                                    })
+
+                                    console.log('program data ((()))', data )
+
+                                    {% if key == 'program' %}
+                                        const paid_by = document.querySelector('#paid_by_pop');
+                                        const mou_required = document.querySelector('#mou_required_pop');
+                                        const service_validity = document.querySelector('#service_validity_pop');
+                                            data['paid_by'] = paid_by.value === 'default' ? null : Number(paid_by.value);
+                                            data['mou_required'] = mou_required.checked === true ? true : false;
+                                            data['service_validity'] = service_validity.value !== '' && service_validity.value < 180 && service_validity.value > 0 ? service_validity.value : null;
+
+                                    {% endif %}
+
+            
+                                    if ( {% if key == 'service' %}data.service && data.service!=='' && data.segment !== 'default'{% elif key == 'marketplace' %}data.marketplace && data.marketplace!=='' && data.service !== 'default'{% elif key == 'program' %}data.program && data.program!=='' && data.marketplace !== 'default'{% endif %} ){
+                                        let url = {% if key == 'marketplace' %}'{% url "create_services" type="marketplace" %}'{% elif key == 'service' %}'{% url "create_services" type="service" %}'{% elif key == 'program' %}'{% url "create_services" type="program" %}'{% endif %}
+                                        let a = await ftN(url, 'POST', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(data))
+                                        if (a){
+                                            poperFunction(a.status, a.message, true)
+                                        }
+                                    } else {
+                                        poperFunction(400, 'something went wrong! Try again', false)
+                                    }
+                                    {% endif %}
+                                })
+                            })
+                        
+                        </script>
+                    </div>
+
+                {% endfor %}
+            {% endfor %}
+
+            </div>
+
+            <div class="p-2 w-[40%] h-full">
+                <div class="commercial_main_dv w-full bg-gray-50 h-full py-3 px-4 rounded-lg hidden">
+                    <div class="flex h-[calc(100%-50px)]">
+                        <div class="overflow-y-auto w-2/4 flex flex-col justify-between border-r">
+                            <div class="w-full p-2 h-full">
+                                <div class="h-[30px] flex justify-between mb-2">
+                                    <h3 class="text-base">Service Details:</h3>
+                                </div>
+                                <div class="h-[calc(100%-30px)]">
+                                    <div class="w-full flex items-center justify-between mb-2">
+                                        <div class="w-[35%] text-xs flex items-center select-none">Segment</div>
+                                        <select id="segment" class="inps capitalize text-xs px-2 h-8 min-h-8 w-[65%] border rounded-xl" name="segment">
+                                            <option value="default" disabled selected>Select Segment</option>
+                                            {% for s in segment %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %}
+                                        </select>    
+                                    </div>
+                
+                                    <div class="w-full flex items-center justify-between my-2">
+                                        <div class="w-[35%] text-xs flex items-center select-none">Service</div>
+                                        <select id="service" class="inps capitalize text-xs px-2 h-8 min-h-8 w-[65%] border rounded-xl" name="service">
+                                            <option value="default" disabled selected>Select Service</option>
+                                            {% comment %} {% for s in service %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %} {% endcomment %}
+                                        </select>
+                                    </div>
+
+                                    <div class="w-full flex items-center justify-between my-2">
+                                        <div class="w-[35%] text-xs flex items-center select-none">Marketplace</div>
+                                        <select id="marketplace" class="inps capitalize text-xs px-2 h-8 min-h-8 w-[65%] border rounded-xl" name="marketplace">
+                                            <option value="default" disabled selected>Select Marketplace</option>
+                                            {% comment %} {% for s in marketplace %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %} {% endcomment %}
+                                        </select>
+                                    </div>
+
+                                    <div class="w-full flex items-center justify-between my-2">
+                                        <div class="w-[35%] text-xs flex items-center select-none">Program</div>
+                                        <input id="program" type="text" placeholder="Program" class="inps text-xs px-2 h-8 w-[65%] border rounded-xl" name="program">
+                                    </div>
+
+
+                                    <div class="w-full flex items-center justify-between my-2 paid_by_dv">
+                                        <div class="w-[35%] text-xs flex items-center select-none">Paid By</div>
+                                        <select id="paid_by" class="inps capitalize text-xs px-2 h-8 min-h-8 w-[65%] border rounded-xl" name="paid_by">
+                                            <option value="default" disabled selected>Select Paid By</option>
+                                            {% for s in paid_by %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+
+                                    <div class="w-full flex items-center justify-between my-2 payment_model_dv hidden">
+                                        <div class="w-[35%] text-xs flex items-center select-none">Payment Model</div>
+                                        <select id="payment_model" placeholder="Payment Model" class="inps capitalize text-xs px-2 h-8 min-h-8 w-[65%] border rounded-xl" name="payment_model">
+                                            <option value="default" disabled selected>Select Payment Model</option>
+                                            {% for s in payment_model %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+
+                                    <div class="w-full flex items-center justify-between my-2 payment_terms_dv hidden">
+                                        <div class="w-[35%] text-xs flex items-center select-none">Payment Terms</div>
+                                        <select id="payment_terms" placeholder="Payment Terms" class="inps capitalize text-xs px-2 h-8 min-h-8 w-[65%] border rounded-xl" name="payment_terms">
+                                            <option value="default" disabled selected>Select Payment Terms</option>
+                                            {% for s in payment_terms %}
+                                                <option value={{s.id}}>{{s}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+
+                                    <div class="w-full flex items-center justify-between my-2 service_validity_dv hidden">
+                                        <div class="w-[35%] text-xs flex items-center select-none">Service Validity</div>
+                                        <input id="service_validity" type="number" placeholder="Service Validity" class="inps text-xs px-2 h-8 w-[65%] border rounded-xl" name="service_validity">
+                                    </div>
+
+
+                                    <div class="flex w-full flex items-center my-2 mou_required_dv">
+                                        <span class="capitalize w-[35%] text-xs">Mou Required</span>
+                                        <input id="mou_required" type="checkbox" placeholder="Mou Required" class="inps text-xs px-2 h-3 w-3 ml-2 border rounded-xl" name="mou_required">
+                                    </div>
+                                
+
+                                    <div class="flex w-full flex items-center my-2">
+                                        <span class="capitalize w-[35%] text-xs">Comments</span>
+                                        <textarea id="comments" placeholder="Comments" name="comments" class="w-[65%] p-2 comments_input resize-none inps input input-bordered h-16 max-w-xs text-xs"></textarea>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="commercial_dv w-2/4 flex flex-col p-2 text-xs">
+                            <div class="h-[30px] flex justify-between mb-2">
+                                <h3 class="text-base">Commercials:</h3>
+                                <img class="w-6 h-6 cursor-pointer add_commercials" src="/static/assets/images/add_circle_black.png">
+                            </div>
+                            <div class="h-[calc((100%-30px)/.8)] border rounded-lg overflow-y-auto shadow-inner bg-slate-200">
+                                <h5 class="text-xs px-2 py-0.5 w-full bg-white text-center bg-slate-500 text-white">Active:</h5>
+                                <ul class="w-full p-1 px-2 commercials_list">
+                                    {% comment %} <li class="h-6 w-full flex items-center my-1"><input class="w-[calc(100%-24px)] h-full p-1 bg-white rounded-l-lg" value="Higher of (Rs. 5000 or 2% of sales)" ><div class="w-6 h-full p-1 flex justify-center items-center cursor-pointer bg-red-600 rounded-r-lg"><img src={% static "assets/images/close_button.png" %} ></div></li>
+                                    <li class="h-6 w-full flex items-center my-1"><input class="w-[calc(100%-24px)] h-full p-1 bg-white rounded-l-lg" value="Higher of (Rs. 5000 or 2% of sales)" ><div class="w-6 h-full p-1 flex justify-center items-center cursor-pointer bg-red-600 rounded-r-lg"><img src={% static "assets/images/close_button.png" %} ></div></li>
+                                    <li class="h-6 w-full flex items-center my-1"><input class="w-[calc(100%-24px)] h-full p-1 bg-white rounded-l-lg" value="Higher of (Rs. 5000 or 2% of sales)" ><div class="w-6 h-full p-1 flex justify-center items-center cursor-pointer bg-red-600 rounded-r-lg"><img src={% static "assets/images/close_button.png" %} ></div></li> {% endcomment %}
+                                </ul>
+                            </div>
+                            <div class="h-[calc((100%-30px)/1.2)] border rounded-lg overflow-y-auto shadow-inner bg-slate-200">
+                                <h5 class="text-xs px-2 py-0.5 w-full bg-white text-center bg-slate-500 text-white">Archived:</h5>
+                                <ul class="w-full p-1 px-2 archived_commercials_list">
+                                </ul>
+
+
+                            </div>
+
+
+
+                            <script>
+
+
+                                const paid_by = document.querySelector('#paid_by');
+                                const payment_model = document.querySelector('#payment_model');
+                                const payment_model_dv = document.querySelector('.payment_model_dv');
+                                const payment_terms_dv = document.querySelector('.payment_terms_dv');
+                                const mou_required = document.querySelector('#mou_required');
+                                const mou_required_dv = document.querySelector('.mou_required_dv');
+                                const service_validity = document.querySelector('.service_validity');
+                                const service_validity_dv = document.querySelector('.service_validity_dv');
+
+
+                                {% comment %} if(paid_by.selectedOptions[0].innerText.trim().toLocaleLowerCase()==='seller paid' ){
+                                    payment_model_dv.classList.remove('hidden');
+                                }
+
+                                if(payment_model.selectedOptions[0].innerText.trim().toLocaleLowerCase()==='seller paid' ){
+                                    mou_required_dv.classList.remove('hidden');
+                                } {% endcomment %}
+
+
+                                paid_by.addEventListener('change',()=>{
+                                    if (paid_by.selectedOptions[0].innerText.trim().toLocaleLowerCase()==='seller paid') {
+                                        payment_model_dv.classList.remove('hidden')
+                                        payment_terms_dv.classList.remove('hidden')
+                                        service_validity_dv.classList.remove('hidden')
+                                    } else {
+                                        payment_model_dv.classList.add('hidden')
+                                        payment_terms_dv.classList.add('hidden')
+                                        service_validity_dv.classList.add('hidden')
+                                    }
+                                })
+
+                                payment_model.onchange = ()=>{
+                                    if (payment_model.selectedOptions[0].innerText.trim().toLocaleLowerCase()==='one time') {
+                                        service_validity_dv.classList.remove('hidden')
+                                    } else {
+                                        service_validity_dv.classList.add('hidden')
+                                    }
+                                }
+
+
+                                {% comment %} payment_model.addEventListener('change',()=>{
+                                    if (payment_model.selectedOptions[0].innerText.trim().toLocaleLowerCase()==='retainership') {
+                                        mou_required_dv.classList.remove('hidden')
+                                    } else {
+                                        mou_required_dv.classList.add('hidden')
+                                    }
+                                }) {% endcomment %}
+
+
+
+                                function archiveCommercial(target, input, id){
+                                    target.addEventListener('click', async()=>{
+                                        if (input.getAttribute('data-commercial-id') === 'null' || input.getAttribute('data-commercial-id') === null ) {
+                                            target.parentElement.remove()
+                                            console.log('removed');
+                                        } else {
+                                            let a = await ftN( '{% url "commercial_visibility" type="archive" id=0 %}'.replaceAll(0, input.getAttribute('data-commercial-id')) , "PUT", {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`} );
+                                            if (a){
+                                                a.status===200? input.parentElement.remove() :poperFunction(a.status, a.message, false)
+                                                getInActiveCommercials(id);   
+                                            }
+                                        }
+                                    })
+                                }
+
+                                async function restoreCommercial(e){
+                                    let id = e.target.getAttribute('data-commercial-id');
+                                    let a = await ftN( '{% url "commercial_visibility" type="restore" id=0 %}'.replaceAll(0, id ) , "PUT", {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`} );
+                                    if (a){
+                                        a.status===200? e.target.parentElement.remove() :poperFunction(a.status, a.message, false)
+                                        getActiveCommercials(e.target.myParam);
+                                    }
+                                }
+
+
+                                function renderCommercials(data, id) {
+                                    const commercials_list = document.querySelector('.commercials_list');
+                                    
+                                    const li = document.createElement('li');
+                                    li.classList.value = 'h-6 w-full flex items-center my-1'
+                                    li.innerHTML = `
+                                            <input class="w-[calc(100%-24px)] h-full p-1 bg-white rounded-l-lg" value="${data!==null && data.value ? data.value:''}" data-commercial-id=${data!==null && data.id ? data.id:'null'} >
+                                            <div class="archive_commercial w-6 h-full p-1 flex justify-center items-center cursor-pointer bg-red-600 rounded-r-lg"><img src={% static "assets/images/close_button.png" %} ></div>
+                                        `;
+                                        commercials_list.append(li)
+
+                                        let archive_commercial = li.querySelector('.archive_commercial');
+                                        console.log(archive_commercial);
+                                        archiveCommercial(archive_commercial, archive_commercial.previousElementSibling, id);
+                                        
+                                }
+
+
+                                const add_commercials = document.querySelector('.add_commercials');
+                                add_commercials.addEventListener('click', renderCommercials)
+
+                                // const archive_commercial = document.querySelectorAll('.archive_commercial');
+                                // archive_commercial.forEach(e=>{
+                                //     e.addEventListener('click', archiveCommercial)
+                                //     e.myParam = e.getAttribute('data-commercial-id')
+                                // })
+
+
+
+                            </script>
+
+                        </div>
+
+                    </div>
+
+                    <div class="w-full flex justify-center my-2">
+                        <button data-id="" class="inps program_update btn btn-success btn-sm text-white">Update</button>
+                    </div>
+                    
+                </div>
+            </div>
+
+        </div>
+
+        {% comment %} <div class="flex justify-end"><button class="add_segment btn btn-success text-white h-[2rem] min-h-[2rem] text-xs">Add Segment</button></div>{% endcomment %}
+
+        <script>
+
+            
+            function selectIndex(e, id){
+                Array.from(e.options).forEach(f=>{
+                    if (Number(f.value) === Number(id) ) {
+                        e.selectedIndex = f.index
+                    }
+                })
+            }
+
+
+            async function editProgramFun(id){
+                // let id = e.target.myParam;
+
+
+
+                const inps = document.querySelectorAll('.inps');
+                const commercials = document.querySelectorAll('.commercials_list input')
+                let data = {}
+
+                data['commercials'] = Array.from(commercials).map(e=> { return{'id': e.getAttribute('data-commercial-id') !== 'null'? Number(e.getAttribute('data-commercial-id')) : null , 'value' :e.value} }).filter(e=>e.value!=='')
+                let select_fields = ['marketplace', 'service_type', 'paid_by', 'payment_model','payment_terms'];
+                let checkbox_fields = ['mou_required'];
+                let text_fields = ['program', 'comments', 'service_validity'];
+
+                inps.forEach((e,i,a)=>{
+                    if (select_fields.includes(e.name) ){  
+                        data[e.name] = Number(e.value)
+                    } else if (text_fields.includes(e.name)){
+
+                        if ( e.name === 'service_validity'){
+                            const payment_model = document.querySelector('#payment_model');
+                            if (payment_model.selectedOptions[0].innerText.toLocaleLowerCase() === "retainership" ){
+                                data[e.name] = null;
+                            } else {
+                                data[e.name] = e.value.toLocaleLowerCase()
+                            }
+                        } else {    
+                            data[e.name] = e.value.toLocaleLowerCase()
+                        }
+
+                        console.log('data ((())))', data)
+                    
+                    } else if (checkbox_fields.includes(e.name)) {
+                        data[e.name] = e.checked
+                    }
+                })
+                
+                
+
+                let url = '{% url "update_services" type="program" id=0 %}'.replaceAll(0,id)
+                let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(data) )
+                if (a){
+                    poperFunction(a.status, a.message, a.status===200?true:false)
+                }
+            }
+
+
+            function editProgramFunInit(){
+                const program_update = document.querySelector('.program_update');
+                console.log("program_update.getAttribute('data-id')", program_update.getAttribute('data-id'))
+                editProgramFun(program_update.getAttribute('data-id'));
+            }
+
+
+            function servicePopup(main_data){
+                const type = main_data.type
+                const id = main_data.id
+                const data = main_data.data
+                const segment_id = main_data.segment
+                const service_id = main_data.service
+                const marketplace_id = main_data.marketplace
+                const program_id = main_data.program
+                const service_type = main_data.service_type
+                const payment_model = main_data.payment_model
+                const payment_terms = main_data.payment_terms
+                const comments = main_data.comments
+
+                const popup = document.createElement('div')
+                popup.classList.value = 'w-screen h-screen fixed top-0 left-0 flex justify-center items-center bg-[rgba(0,0,0,0.7)] '
+                popup.innerHTML = `
+                <div class="card w-[400px] h-auto bg-white text-neutral-content overflow-hidden">
+                    <div class="h-[35px] relative flex justify-center items-center text-white bg-slate-900">View/Edit ${type}</div>
+                        <img class="close_btn absolute h-6 w-6 top-[5px] right-[5px]" src="{% static "assets/images/close_button.png" %}">
+
+                        <div class="h-[calc(100%-35px)] main_input_body w-full p-3 bg-gray-50 text-slate-900 text-xs">
+                        
+                            <div class="w-full flex items-center p-1 my-1 justify-between">
+                                <div class="1/4 text-xs flex items-center capitalize">${type}</div>
+                                <input id="segment" type="text" class="inps segment_inp ml-3 text-xs px-3 h-8 w-3/4 border rounded-xl" name="${type}" value="${data}">
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                `
+                document.body.append(popup)
+
+                const main_input_body = popup.querySelector('.main_input_body')
+                function createElement(){
+                    const div = document.createElement('div')
+                    div.classList.value = 'w-full flex items-center p-1 my-1 justify-between'
+                    return div
+                }
+
+
+                function addFieldServiceType(){
+                    const div = createElement()
+                    div.innerHTML = `
+                        <div class="1/4 text-xs flex items-center">Service Type</div>
+                            <select id="service_type" class="inps capitalize text-xs ml-3 text-sm px-2 h-8 min-h-8 w-3/4 border rounded-xl" name="service_type">
+                                <option value=default disabled selected>Select Service Type</option>
+                                {% for s in service_type %}
+                                    <option value={{s.id}}>{{s}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>`
+                    main_input_body.append(div)
+                }
+
+                function addFieldPaymentModel(){
+                    const div = createElement()
+                    div.innerHTML = `
+                        <div class="flex w-full flex items-center">
+                            <span class="capitalize text-sm w-1/4 text-xs">Payment Model</span>
+                            <input id="payment_model" type="text" placeholder="Payment Model" class="inps text-xs px-2 h-8 w-3/4 border rounded-xl" name="payment_model">
+                        </div>`
+                    main_input_body.append(div)
+
+                }
+
+                function addFieldComments(){
+                    const div = createElement()
+                    div.innerHTML = `
+                        <div class="flex w-full flex items-center">
+                            <span class="capitalize text-sm w-1/4 text-xs">Comments</span>
+                            <textarea id="comments" placeholder="Comments" name="comments" class="w-3/4 p-2 comments_input resize-none inps input input-bordered h-16 max-w-xs text-xs"></textarea>
+                        </div>`
+                    main_input_body.append(div)
+
+                }
+
+
+
+                // function addFieldProgram(){
+                //     const div = createElement()
+                //     div.innerHTML = `
+                //         <div class="1/4 text-xs flex items-center my-1">Program</div>
+                //         <select id="program" class="inps capitalize text-xs ml-3 text-sm px-2 h-8 min-h-8 w-3/4 border rounded-xl" name="program">
+                //             <option value=default disabled selected>Select Program</option>
+                //             {% comment %} {% for s in program %}
+                //                 <option value={{s.id}}>{{s}}</option>
+                //             {% endfor %} {% endcomment %}
+                //         </select>
+                //     `
+                //     main_input_body.prepend(div)
+                // }
+
+
+                function addFieldMarketplace(){
+                    const div = createElement()
+                    div.innerHTML = `
+                        <div class="1/4 text-xs flex items-center">Marketplace</div>
+                        <select id="marketplace" class="inps capitalize text-xs ml-3 text-sm px-2 h-8 min-h-8 w-3/4 border rounded-xl" name="marketplace">
+                            <option value=default disabled selected>Select Marketplace</option>
+                            {% comment %} {% for s in marketplace %}
+                                <option value={{s.id}}>{{s}}</option>
+                            {% endfor %} {% endcomment %}
+                        </select>
+                    `
+                    main_input_body.prepend(div)
+                }
+
+                function addFieldService(){
+                    const div = createElement()
+                    div.innerHTML = `
+                        <div class="1/4 text-xs flex items-center">Service</div>
+                        <select id="service" class="inps capitalize text-xs ml-3 text-sm px-2 h-8 min-h-8 w-3/4 border rounded-xl" name="service">
+                            <option value=default disabled selected>Select Service</option>
+                            {% comment %} {% for s in service %}
+                                <option value={{s.id}}>{{s}}</option>
+                            {% endfor %} {% endcomment %}
+                        </select>
+                    `
+                    main_input_body.prepend(div)
+                }
+
+                function addFieldSegment(){
+                    const div = createElement()
+                    div.innerHTML = `
+                        <div class="1/4 text-xs flex items-center">Segment</div>
+                        <select id="segment" class="inps capitalize text-xs ml-3 text-sm px-2 h-8 min-h-8 w-3/4 border rounded-xl" name="segment">
+                            <option value=default disabled selected>Select Segment</option>
+                            {% for s in segment %}
+                                <option value={{s.id}}>{{s}}</option>
+                            {% endfor %}
+                        </select>
+                    `
+                    main_input_body.prepend(div)
+                }
+
+
+                function addSubmitButton(){
+                    const div = createElement()
+                    div.innerHTML = `
+                    <div class="w-full flex justify-center">
+                        <button data-id=${id} class="inps ${type}_update btn btn-success btn-sm text-white">Success</button>
+                    </div>`
+                    main_input_body.append(div)
+                }
+
+
+
+                if (type === 'service'){
+                    addFieldSegment()
+
+                } else if (type === 'marketplace'){
+                    addFieldService()
+                    addFieldSegment()
+
+                } else if (type === 'program'){
+                    addFieldMarketplace()
+                    addFieldService()
+                    addFieldSegment()
+                    addFieldServiceType()
+                    addFieldPaymentModel()
+                    addFieldComments()
+                }
+                
+                addSubmitButton()
+                
+                // else if (type==="sub_program"){
+                //     addFieldProgram()
+                //     addFieldService()
+                //     addFieldMarketplace()
+                //     addFieldSegment()
+                // }
+
+                {% for d in data %}
+                {% for key, value in d.items %}
+
+                    if (data){
+                        const {{key}} = popup.querySelector('#{{key}}');
+                        console.log({{key}})
+                        {% if key == 'service' %}const segment = popup.querySelector('#segment'){% elif key == 'marketplace' %}const service = popup.querySelector('#service'){% elif key == 'program' %}const marketplace = popup.querySelector('#marketplace'){% endif %}
+                        {% if key == 'segment' %}
+                            if({{key}}.type === 'select-one'){
+                            Array.from({{key}}.options).forEach(e=>{
+                        {% else %}
+
+                                const {{key}}_list = []
+                                main_dropdown_data.forEach(f=>{
+
+                                    if({{key}}){
+                                        if(f.table === '{{key}}'){
+                                            if({{key}}.type === 'select-one'){
+                                                {{key}}.innerHTML = ''
+                                            }
+                                            f.value.forEach(g=>{
+                                            
+                                                if (Number({% if key == 'service' %}segment_id{% elif key == 'marketplace' %}service_id{% elif key == 'program' %}marketplace_id{% endif %}) === Number(g["{% if key == 'service' %}segment{% elif key == 'marketplace' %}service{% elif key == 'program' %}marketplace{% endif %}"].id )){
+                                                    const opt = document.createElement('option');
+                                                    opt.value = g['{{key}}'].id
+                                                    opt.innerText = g['{{key}}'].value
+                                                    {{key}}.append(opt)
+                                                
+                                                    if (Number(g['{{key}}'].id) == Number(data.{{key}})){
+                                                        opt.selected = true
+                                                    }
+                                                }
+                                            })
+                                        }
+                                    }
+                                })
+                                
+                                if(true){
+                                {{key}}_list.forEach(e=>{
+                            {% endif %}
+                                    if(e.value === 'null'){e.remove()}
+                                    if (Number(e.value) === Number(data.{{key}})) {
+                                        const opt = document.createElement('option');
+                                        opt.selected = true
+                                        opt.disabled = true
+                                        opt.value = e.value
+                                        opt.innerText = e.innerText
+                                        {{key}}.prepend(opt)
+                                    }
+                                })
+                            }
+                    }
+
+                {% endfor %}
+            {% endfor %}
+                
+                
+
+                const segment = document.querySelector('#segment')
+                const service = document.querySelector('#service')
+                const marketplace = document.querySelector('#marketplace')
+                const program = document.querySelector('#program')
+                const service_type_elem = document.querySelector('#service_type');
+                const payment_model_elem = document.querySelector('#payment_model');
+                const payment_terms_elem = document.querySelector('#payment_terms');
+                const comments_elem = document.querySelector('#comments');
+            
+                // const sub_program = document.querySelector('#sub_program')
+
+                if (type === 'marketplace' || type === 'program'){
+                    interDependentFields(segment, service, 'segment', 'service')
+                } 
+                if (type === 'program'){
+                    selectIndex(service_type_elem,Number(service_type))
+                    // payment_model_elem.value = payment_model
+                    comments_elem.value = comments
+                    interDependentFields(service , marketplace, 'service', 'marketplace')
+                    
+                }
+                // if (type === 'sub_program'){
+                //     interDependentFields(service, program, 'service', 'program')
+                // }
+
+                
+
+
+
+                const inps = document.querySelectorAll('.inps');
+                inps.forEach(e=>{
+                    if (type === 'service' || type === 'marketplace' || type === 'program'){
+                        if (e.name === 'segment') {
+                            selectIndex(e,segment_id)
+                        }
+                    }
+                    if (type === 'marketplace' || type === 'program'){
+                        if (e.name === 'service') {
+                            selectIndex(e,service_id)
+                        }
+                    }
+                    if (type === 'program'){
+                        if (e.name === 'marketplace') {
+                            console.log('marketplace_id',marketplace_id)
+                            selectIndex(e,marketplace_id)
+
+                        }
+                    }
+                })
+                
+
+
+                const close_btn = popup.querySelectorAll('.close_btn');
+                close_btn.forEach(e=>{
+                    e.addEventListener('click',()=>{
+                        popup.remove()
+                    })
+                })
+                
+                {% for d in data %}
+                    {% for key, value in d.items %}
+                        const {{key}}_update = document.querySelector('.{{key}}_update');
+                    
+                        if ({{key}}_update){
+                            console.log({{key}}_update)
+                            {{key}}_update.addEventListener('click',async(e)=>{
+                                
+                                const inps = document.querySelector{% if not key == 'segment' %}All{% endif %}('.inps');
+                                // console.log('inps', inps)
+                                let data = {}
+                                {% if key == 'segment'  %}
+                                    const segment_inp = document.querySelector('.segment_inp');
+                                    
+                                    let url = '{% url "update_services" type="segment" id=0 %}'.replaceAll(0,e.target.getAttribute('data-id'))
+                                    data['segment'] = segment_inp.value
+                                    // console.log('data ***((()))', data)
+                                {% else %}
+
+                                    inps.forEach(e=>{
+                                        if (e.name==={% if key == 'service'  %}'segment'{% elif key == 'marketplace'  %}'service'{% elif key == 'program'  %}'marketplace' || e.name==='service_type'{% endif %}){  
+                                            console.log(e, e.value)
+                                            data[e.name] = Number(e.value)
+                                        } else if (e.name==={% if key == 'marketplace'  %}'marketplace'{% elif key == 'service'  %}'service'{% elif key == 'program'  %}'program' || e.name==='payment_model' {% endif %}){
+                                            data[e.name] = e.value.toLocaleLowerCase()
+                                        }
+                                    })
+
+                                    {% if key == 'service'  %}
+                                        let url = '{% url "update_services" type="service" id=0 %}'.replaceAll(0,e.target.getAttribute('data-id'))
+                                    {% elif key == 'marketplace'  %}
+                                        let url = '{% url "update_services" type="marketplace" id=0 %}'.replaceAll(0,e.target.getAttribute('data-id'))
+                                    {% elif key == 'program'  %}
+                                        let url = '{% url "update_services" type="program" id=0 %}'.replaceAll(0,e.target.getAttribute('data-id'))
+                                    {% endif %}
+                                
+                                {% endif %}
+
+
+                                let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(data) )
+                                if (a){
+                                    poperFunction(a.status, a.message, a.status===200?true:false)
+                                }
+                        
+
+                        //const service_update = document.querySelector('.service_update');
+                        // if (service_update){
+                            //service_update.addEventListener('click',async(e)=>{
+                                //data ={}
+                                //const inps = document.querySelectorAll('.inps');
+                                // inps.forEach(e=>{
+                                //     if (e.name === 'marketplace'){  
+                                //         console.log(e, e.value)
+                                //         data[e.name] = Number(e.value)
+                                //     } else if (e.name === 'service'){
+                                //         data[e.name] = e.value
+                                //     }
+                                // })
+
+                                //let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(data) )
+                                //if (a){
+                                //    {% comment %} poperFunction(a.status, a.message, a.status===200?true:false) {% endcomment %}
+                                //}
+                            //})
+                        //}
+
+                        //const marketplace_update = document.querySelector('.marketplace_update');
+                        //if (marketplace_update){
+                            //data ={}
+                            //marketplace_update.addEventListener('click',async(e)=>{
+
+                            //  const inps = document.querySelectorAll('.inps');
+                                // inps.forEach(e=>{
+                                //     if (e.name === 'segment'){  
+                                //         console.log(e, e.value)
+                                //         data[e.name] = Number(e.value)
+                                //     } else if (e.name === 'marketplace'){
+                                //         data[e.name] = e.value
+                                //     }
+                                // })
+
+
+                                //let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(data) )
+                                //if (a){
+                                //    poperFunction(a.status, a.message, a.status===200?true:false)
+                                //}
+                            //})
+                        //}
+
+                        //const program_update = document.querySelector('.program_update');
+                        //if (program_update){
+                            //program_update.addEventListener('click',async(e)=>{
+                                //data = {}
+                                //const inps = document.querySelectorAll('.inps');
+                                //inps.forEach(e=>{
+                                //    if (e.name === 'service'){  
+                                //        console.log(e, e.value)
+                                //        data[e.name] = Number(e.value)
+                                //    } else if (e.name === 'program'){
+                                //        data[e.name] = e.value
+                                //    }
+                                //})
+
+                                //let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(data) )
+                                //if (a){
+                                //    poperFunction(a.status, a.message, a.status===200?true:false)
+                                //}
+                            //})
+                        //}
+
+                            })
+                        }
+
+                    {% endfor %}
+                {% endfor %}
+
+            }
+
+
+
+            {% for d in data %}
+                {% for key,value in d.items %}
+                    const edit_{{key}} = document.querySelectorAll('.edit_{{key}}');
+                    edit_{{key}}.forEach(e=>{
+                        e.addEventListener('click', async()=>{
+                            const data = {type:'{{key}}',
+                            id: e.getAttribute('data-id'),
+                            data: e.getAttribute('data-{{key}}').replaceAll('_',' '),
+                            segment: e.getAttribute('data-segment'),
+                            service: e.getAttribute('data-service'),
+                            marketplace: e.getAttribute('data-marketplace'),
+                            program: e.getAttribute('data-program'),
+                            service_type: e.getAttribute('data-service-type'),
+                            payment_model: e.getAttribute('data-payment-model'),
+                            payment_terms: e.getAttribute('data-payment-terms'),
+                            service_validity: e.getAttribute('data-service-validity'),
+                            comments: e.getAttribute('data-comments'),
+                            paid_by: e.getAttribute('data-paid-by'),
+                            mou_required: e.getAttribute('data-mou-required')
+                        }
+
+                            {% if key == 'program' %}
+
+                                const commercial_main_dv = document.querySelector('.commercial_main_dv');
+                                if (commercial_main_dv){
+                                    commercial_main_dv.classList.remove('hidden');
+                                }
+
+                                {% for d in data %}
+                                {% for key, value in d.items %}
+                
+                                    if (data){
+                                        const {{key}} = commercial_main_dv.querySelector('#{{key}}');
+                                        console.log({{key}})
+                                        {% if key == 'service' %}const segment = commercial_main_dv.querySelector('#segment'){% elif key == 'marketplace' %}const service = commercial_main_dv.querySelector('#service'){% elif key == 'program' %}const marketplace = commercial_main_dv.querySelector('#marketplace'){% endif %}
+                                        {% if key == 'segment' %}
+                                            if({{key}}.type === 'select-one'){
+                                            Array.from({{key}}.options).forEach(e=>{
+                                        {% else %}
+                
+                                                const {{key}}_list = []
+                                                main_dropdown_data.forEach(f=>{
+                
+                                                    if({{key}}){
+                                                        if(f.table === '{{key}}'){
+                                                            if({{key}}.type === 'select-one'){
+                                                                {{key}}.innerHTML = ''
+                                                            }
+                                                            f.value.forEach(g=>{
+                                                            
+                                                                if (Number({% if key == 'service' %}data.segment{% elif key == 'marketplace' %}data.service{% elif key == 'program' %}data.marketplace{% endif %}) === Number(g["{% if key == 'service' %}segment{% elif key == 'marketplace' %}service{% elif key == 'program' %}marketplace{% endif %}"].id )){
+                                                                    const opt = document.createElement('option');
+                                                                    opt.value = g['{{key}}'].id
+                                                                    opt.innerText = g['{{key}}'].value
+                                                                    {{key}}.append(opt)
+                                                                
+                                                                    if (Number(g['{{key}}'].id) == Number(data.{{key}})){
+                                                                        opt.selected = true
+                                                                    }
+                                                                }
+                                                            })
+                                                        }
+                                                    }
+                                                })
+                                                
+                                                if(true){
+                                                {{key}}_list.forEach(e=>{
+                                            {% endif %}
+                                                    if(e.value === 'null'){e.remove()}
+                                                    if (Number(e.value) === Number(data.{{key}})) {
+                                                        const opt = document.createElement('option');
+                                                        opt.selected = true
+                                                        opt.disabled = true
+                                                        opt.value = e.value
+                                                        opt.innerText = e.innerText
+                                                        {{key}}.prepend(opt)
+                                                    }
+                                                })
+                                            }
+                                    }
+                
+                                    {% endfor %}
+                                {% endfor %}
+
+
+                                getActiveCommercials(data.id)
+                                getInActiveCommercials(data.id)
+
+
+                                const segment = document.querySelector('#segment')
+                                const service = document.querySelector('#service')
+                                const marketplace = document.querySelector('#marketplace')
+                                const program = document.querySelector('#program')
+                                const paid_by_elem = document.querySelector('#paid_by');
+                                const payment_model_elem = document.querySelector('#payment_model');
+                                const payment_terms_elem = document.querySelector('#payment_terms');
+                                const service_validity_elem = document.querySelector('#service_validity');
+                                const comments_elem = document.querySelector('#comments');
+                                const mou_required_elem = document.querySelector('#mou_required');
+                                const program_update = document.querySelector('.program_update');
+                            
+                                // const sub_program = document.querySelector('#sub_program')
+                
+                                if (data.type === 'marketplace' || data.type === 'program'){
+                                    interDependentFields(segment, service, 'segment', 'service')
+                                } 
+                                if (data.type === 'program'){
+
+                                    // payment_model_elem.value = data.payment_model
+                                    comments_elem.value = data.comments
+                                    program.value = data.program
+                                    if (data.mou_required === 'True' ) {
+                                        mou_required_elem.checked = true
+                                    } else {
+                                        mou_required_elem.checked = false
+                                    }
+
+                                    program_update.setAttribute('data-id', data.id);
+
+                                    // console.log('((((()))))', data.paid_by)
+
+
+                                    if (data.paid_by === null || data.paid_by === '' ) {
+                                        paid_by_elem.selectedIndex = 0;
+                                        payment_model_dv.classList.add('hidden')
+                                        payment_terms_dv.classList.add('hidden')
+                                        service_validity_dv.classList.add('hidden')
+                                    } else {
+                                        selectIndex(paid_by_elem,Number(data.paid_by))
+                                        if (paid_by_elem.selectedOptions[0].innerText.toLocaleLowerCase() === 'seller paid'){
+                                            payment_model_dv.classList.remove('hidden')
+                                            payment_terms_dv.classList.remove('hidden')
+                                            service_validity_dv.classList.remove('hidden')
+                                        } 
+                                        else {
+                                            payment_model_dv.classList.add('hidden')
+                                            payment_terms_dv.classList.add('hidden')
+                                            service_validity_dv.classList.add('hidden')
+                                        }
+                                    }
+                                    if (data.payment_model === null || data.payment_model === '' ) {
+
+                                        payment_model_elem.selectedIndex=0;
+                                    
+                                    } else {selectIndex(payment_model_elem,Number(data.payment_model))}
+
+                                    if (data.payment_terms === null || data.payment_terms === '' ) {
+                                        payment_terms_elem.selectedIndex=0;
+                                    } else {selectIndex(payment_terms_elem,Number(data.payment_terms))}
+
+                                    console.log('data',data)
+
+                                    if (data.service_validity === null || data.service_validity === '' || data.service_validity === 'None' ) {
+                                        service_validity_elem.value='';
+                                    } else {service_validity_elem.value = data.service_validity }
+
+                                    if (payment_model.selectedOptions[0].innerText.toLocaleLowerCase() === 'retainership' ){
+                                        service_validity_dv.classList.add('hidden')
+                                    } else {
+                                        service_validity_dv.classList.remove('hidden')
+                                    }
+
+                                    interDependentFields(service , marketplace, 'service', 'marketplace')
+                                };
+
+                                    // const program_update = document.querySelector('.program_update');                                
+                                    if (program_update){
+                                        program_update.addEventListener('click', editProgramFunInit)
+                                    }
+        
+
+
+
+                                // servicePopup(data)
+                            {% else %}
+                                servicePopup(data)
+                            {% endif %}
+
+                        })
+                    })
+        
+        
+                    const archive_{{key}} = document.querySelectorAll('.archive_{{key}}');
+                    archive_{{key}}.forEach(e=>{
+                        e.addEventListener('click', async()=>{
+
+                            {% if key == 'segment' %}
+                                let url = '{% url "archive_services" type="segment" id=0 %}'.replaceAll(0,e.getAttribute('data-id'))
+                            {% elif key == 'marketplace' %}
+                                let url = '{% url "archive_services" type="marketplace" id=0 %}'.replaceAll(0,e.getAttribute('data-id'))
+                            {% elif key == 'service' %}
+                                let url = '{% url "archive_services" type="service" id=0 %}'.replaceAll(0,e.getAttribute('data-id'))
+                            {% elif key == 'program' %}
+                                let url = '{% url "archive_services" type="program" id=0 %}'.replaceAll(0,e.getAttribute('data-id'))
+                            {% endif %}
+                            
+                            let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+                            if (a){
+                                poperFunction(a.status, a.message, a.status===200?true:false)
+                            }
+                        })
+                    })
+        
+                    const restore_{{key}} = document.querySelectorAll('.restore_{{key}}');
+                    restore_{{key}}.forEach(e=>{
+                        e.addEventListener('click', async()=>{
+
+                            {% if key == 'segment' %}
+                                let url = '{% url "restore_services" type="segment" id=0 %}'.replaceAll(0,e.getAttribute('data-id'))
+                            {% elif key == 'marketplace' %}
+                                let url = '{% url "restore_services" type="marketplace" id=0 %}'.replaceAll(0,e.getAttribute('data-id'))
+                            {% elif key == 'service' %}
+                                let url = '{% url "restore_services" type="service" id=0 %}'.replaceAll(0,e.getAttribute('data-id'))
+                            {% elif key == 'program' %}
+                                let url = '{% url "restore_services" type="program" id=0 %}'.replaceAll(0,e.getAttribute('data-id'))                     
+                            {% endif %}
+                            
+                            let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+                            if (a){
+                                poperFunction(a.status, a.message, a.status===200?true:false)
+                            }
+                        })
+                    })
+                {% endfor %}
+            {% endfor %}
+
+            
+
+
+
+
+
+            //const edit_service = document.querySelectorAll('.edit_service');
+            //edit_service.forEach(e=>{
+            //    e.addEventListener('click', async()=>{
+            //        servicePopup(e.getAttribute('data-service').replaceAll('_',' '), e.getAttribute('data-id'), 'service')
+            //    })
+            //})
+            //const archive_service = document.querySelectorAll('.archive_service');
+            //archive_service.forEach(e=>{
+            //    e.addEventListener('click', async()=>{
+
+            //        let a = await ftN(url, 'DELETE', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+            //        if (a){
+            //            poperFunction(a.status, a.message, a.status===200?true:false)
+            //        }
+            //    })
+            //})
+            //const restore_service = document.querySelectorAll('.restore_service');
+            //restore_service.forEach(e=>{
+            //    e.addEventListener('click', async()=>{
+            //        let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+            //        if (a){
+            //            poperFunction(a.status, a.message, a.status===200?true:false)
+            //        }
+            //    })
+            //})
+
+
+            //const edit_marketplace = document.querySelectorAll('.edit_marketplace');
+            //edit_marketplace.forEach(e=>{
+            //    e.addEventListener('click', async()=>{
+            //        servicePopup(e.getAttribute('data-marketplace').replaceAll('_',' '), e.getAttribute('data-id'), 'marketplace')
+            //    })
+            //})
+            //const archive_marketplace = document.querySelectorAll('.archive_marketplace');
+            //archive_marketplace.forEach(e=>{
+            //    e.addEventListener('click', async()=>{
+            //        let a = await ftN(url, 'DELETE', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+            //        if (a){
+            //            poperFunction(a.status, a.message, a.status===200?true:false)
+            //        }
+            //    })
+            //})
+            //const restore_marketplace = document.querySelectorAll('.restore_marketplace');
+            //restore_marketplace.forEach(e=>{
+            //    e.addEventListener('click', async()=>{
+            //        let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+            //        if (a){
+            //            poperFunction(a.status, a.message, a.status===200?true:false)
+            //        }
+            //    })
+            //})
+
+            //const edit_program = document.querySelectorAll('.edit_program');
+            //edit_program.forEach(e=>{
+            //    e.addEventListener('click', async()=>{
+            //        servicePopup(e.getAttribute('data-program').replaceAll('_',' '), e.getAttribute('data-id'), 'program')
+            //    })
+            //})
+            //const archive_program = document.querySelectorAll('.archive_program');
+            //archive_program.forEach(e=>{
+            //    e.addEventListener('click', async()=>{
+            //        let a = await ftN(url, 'DELETE', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+            //        if (a){
+            //            poperFunction(a.status, a.message, a.status===200?true:false)
+            //        }
+            //    })
+            //})
+            //const restore_program = document.querySelectorAll('.restore_program');
+            //restore_program.forEach(e=>{
+            //    e.addEventListener('click', async()=>{
+            //        let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, '')
+            //        if (a){
+            //            poperFunction(a.status, a.message, a.status===200?true:false)
+            //        }
+            //    })
+            //})
+
+
+
+            //const edit_sub_program = document.querySelectorAll('.edit_sub_program');
+            //edit_sub_program.forEach(e=>{
+            //    e.addEventListener('click', async()=>{
+            //        servicePopup(e.getAttribute('data-sub-program').replaceAll('_',' '), e.getAttribute('data-id'), 'sub_program')
+            //    })
+            //})
+
+
+
+
+
+
+        </script>     
+
+    {% comment %} {% endif %} {% endcomment %}
+    {% endwith %}
+
+</div>
+
+<script src="{% static "assets/js/tooltip.js" %}"></script>
+
+{% endblock  %}

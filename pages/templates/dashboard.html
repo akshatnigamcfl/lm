@@ -1,0 +1,478 @@
+{% extends "layout/layout.html" %}
+
+{% block page_title %}Dashboard{% endblock  %}
+
+
+{% block page_body %}
+
+{% load static %}
+{% load poll_extras %}
+
+
+
+<div class="w-full h-full rounded-t-3xl bg-slate-900 flex flex-col overflow-y-scroll">
+    <div class="flex-1">
+        <div class="flex flex-wrap items-center px-6 py-2">
+
+
+            {% if  request.user|role_validity:'super_admin' or request.user|role_validity:'business_development_team_lead' or request.user|role_validity:'business_development_associate' or request.user|role_validity:'admin' or request.user.is_admin  %}
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_assigned_leads.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Total Leads</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{primary_data|length}}</div>
+                </div>
+            </div>
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_assigned_leads.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Yet To Contact</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{yet_to_contact|length}}</div>
+                </div>
+            </div>
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_pitch_in_progress.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Pitch In Progress</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{pitch_in_progress|length}}</div>
+                </div>
+            </div>
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2 bg-green-200">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_converted_leads.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm ">Converted Leads</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{converted_leads|length}}</div>
+                </div>
+            </div>
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_pending_for_mou.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Pending For MOU</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{pending_for_mou|length}}</div>
+                </div>
+            </div>
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-1">
+                    <img src="{% static "assets/images/dashboard_pending_for_payment.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Pending For Payment</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{pending_for_payment|length}}</div>
+                </div>
+            </div>
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_pending_for_mou_validation.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Pending For Mou Validation</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{pending_for_mou_validation|length}}</div>
+                </div>
+            </div>
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_payment_validation_pending.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Payment Validation Pending</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{payment_validation_pending|length}}</div>
+                </div>
+            </div>
+
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_follow_up.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Follow Up</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{follow_up|length}}</div>
+                </div>
+            </div>
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_unresponsive.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Unresponsive</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{unresponsive|length}}</div>
+                </div>
+            </div>
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2 bg-red-300">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_not_interested.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Not Interested</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{not_interested|length}}</div>
+                </div>
+            </div>
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_assign_associate_pending.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Assign Service Associate Pending</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{assign_service_associate_pending|length}}</div>
+                </div>
+            </div>
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_proposal_email_sent.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Proposal Email Sent</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{proposal_email_sent|length}}</div>
+                </div>
+            </div>
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_mou_generated.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Mou Generated</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{mou_generated|length}}</div>
+                </div>
+            </div>
+
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_pending_for_commercial_approval.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Pending For Commercial Approval</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{pending_for_commercial_approval|length}}</div>
+                </div>
+            </div>
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_commercial_rejected.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Commercial Rejected</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{commercial_rejected|length}}</div>
+                </div>
+            </div>
+
+            {% elif request.user|role_validity:'admin' %}
+
+
+                <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                    <div class="w-[80px] h-full flex justify-center items-center p-3">
+                        <img src="{% static "assets/images/dashboard_total_employees.png" %}">
+                    </div>
+                    <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                        <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Total Employees</div>
+                        <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{total_employees|length}}</div>
+                    </div>
+                </div>
+
+                <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2 bg-green-200">
+                    <div class="w-[80px] h-full flex justify-center items-center p-3">
+                        <img src="{% static "assets/images/dashboard_active.png" %}">
+                    </div>
+                    <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                        <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm ">Active</div>
+                        <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{active|length}}</div>
+                    </div>
+                </div>
+           
+            
+
+                <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2 bg-red-300">
+                    <div class="w-[80px] h-full flex justify-center items-center p-3">
+                        <img src="{% static "assets/images/dashboard_unplanned_leave.png" %}">
+                    </div>
+                    <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                        <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Unplanned Leave</div>
+                        <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{unplanned_leave|length}}</div>
+                    </div>
+                </div>
+
+                <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2 bg-red-300">
+                    <div class="w-[80px] h-full flex justify-center items-center p-3">
+                        <img src="{% static "assets/images/dashboard_planned_leave.png" %}">
+                    </div>
+                    <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                        <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Planned Leave</div>
+                        <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{planned_leave|length}}</div>
+                    </div>
+                </div>
+
+                <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2 bg-red-300">
+                    <div class="w-[80px] h-full flex justify-center items-center p-3">
+                        <img src="{% static "assets/images/dashboard_absconded.png" %}">
+                    </div>
+                    <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                        <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Absconded</div>
+                        <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{absconded|length}}</div>
+                    </div>
+                </div>
+
+                <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                    <div class="w-[80px] h-full flex justify-center items-center p-3">
+                        <img src="{% static "assets/images/dashboard_notice_period.png" %}">
+                    </div>
+                    <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                        <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Notice Period</div>
+                        <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{notice_period|length}}</div>
+                    </div>
+                </div>
+
+
+                <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                    <div class="w-[80px] h-full flex justify-center items-center p-3">
+                        <img src="{% static "assets/images/dashboard_resigned.png" %}">
+                    </div>
+                    <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                        <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Resigned</div>
+                        <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{resigned|length}}</div>
+                    </div>
+                </div>
+
+
+
+            {% elif request.user|role_validity:'accounts_associate' and request.user|role_validity:'accounts_team_lead' %}
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_total_employees.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Payment Requests</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{payment_requests|length}}</div>
+                </div>
+            </div>
+
+
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2 bg-green-200">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_active.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm ">Approved</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{approved|length}}</div>
+                </div>
+            </div>
+
+
+            <div class="flex h-28 w-[270px] m-3 bg-white rounded-xl overflow-hidden p-2 bg-red-300">
+                <div class="w-[80px] h-full flex justify-center items-center p-3">
+                    <img src="{% static "assets/images/dashboard_not_interested.png" %}">
+                </div>
+                <div class="flex flex-col h-full w-[calc(100%-80px)]">
+                    <div class="border-b-2 flex-1 flex justify-center items-center text-slate-900 text-sm">Rejected</div>
+                    <div class="flex-1 flex justify-center items-center font-bold text-2xl text-slate-900">{{rejected|length}}</div>
+                </div>
+            </div>
+            
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+    {% if not request.user|role_validity:'accounts_associate' and not request.user|role_validity:'accounts_team_lead' %}
+
+    <div class="flex-1">
+        <div class="w-full h-96 flex px-6 py-2 ">
+            <div class="w-[calc(100%-300px)] h-full bg-white rounded-xl px-3 py-2 mx-2">
+
+                <div class="w-full h-10 flex justify-between items-center">
+                    <div class="data_type_heading capitalize text-green-700 w-auto text-lg font-bold text-sm">{% if request.user|role_validity:'super_admin' or request.user|role_validity:'business_development_associate' or request.user|role_validity:'business_development_team_lead' or request.user.is_admin %}
+                        {% if request.GET.data_type|default:'overall_performance' == 'overall_performance' %}overall performance
+                        {% elif request.GET.data_type == 'associate_level_performance' %}associate level performance
+                        {% elif request.GET.data_type == 'service_level_performance' %}service level performance
+                        {% endif %}
+                        {% elif request.user|role_validity:'admin' %}On Notice Period{% endif %}</div>
+                    {% if request.user|role_validity:'super_admin' or request.user|role_validity:'business_development_associate' or request.user|role_validity:'business_development_team_lead' or request.user.is_admin %}
+                    <div class="w-auto ">
+                        <select class="dashboard_data_type_select capitalize h-8 rounded-xl text-white text-sm bg-slate-900 px-2">
+                            {% if request.GET.data_type  %}
+                                <option disabled selected value="{{request.GET.data_type}}">{{ request.GET.data_type|customreplacespace:"_" }}</option>
+                            {% endif %}
+                            <option value="overall_performance">overall performance</option>
+                            <option value="associate_level_performance">associate level performance</option>
+                            <option value="service_level_performance">service level performance</option>
+                        </select>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <script>
+
+                    const dashboard_data_type_select = document.querySelector('.dashboard_data_type_select');
+                    dashboard_data_type_select.addEventListener('change',()=>{
+                        const params = new URLSearchParams(window.location.search)
+                        params.set('data_type', dashboard_data_type_select.value);
+                        console.log(params.toString())
+                        window.location.href = window.location.pathname+'?'+params.toString()
+
+                    })
+                    
+                </script>
+
+                <div class="h-[calc(100%-2.5rem)] p-2">
+
+                    <div class="overflow-x-auto">
+                        <table class="table">
+                          <!-- head -->
+                          <thead>
+                            {% if request.user|role_validity:'super_admin' or request.user|role_validity:'business_development_associate' or request.user|role_validity:'business_development_team_lead' or request.user.is_admin %}
+
+                                {% with request.GET.data_type|default:'overall_performance' as data_type %}
+                                    <tr>
+
+                                        {% if data_type == 'overall_performance' %}
+                                            <th>Name</th>
+                                            <th>Associate Assigned</th>
+                                            <th>Associate Unassigned</th>
+                                            <th>Open Leads</th>
+                                            <th>Closed Leads</th>
+                                            <th>Unresponsive</th>
+                                            <th>Not Interested</th>
+                                            <th>Conversion Rate</th>
+                                        {% elif data_type == 'associate_level_performance' %}
+                                            <th>Name</th>
+                                            <th>Team Leader</th>
+                                            {% comment %} <th>Department</th> {% endcomment %}
+                                            <th>Lead Assigned</th>
+                                            <th>Open Leads</th>
+                                            <th>Closed Leads</th>
+                                            <th>Unresponsive</th>
+                                            <th>Not Interested</th>
+                                            <th>Conversion Rate</th>
+                                        {% elif data_type == 'service_level_performance' %}
+                                            <th>Marketplace</th>
+                                            <th>Service</th>
+                                            <th>Assigned Leads</th>
+                                            <th>Open Leads</th>
+                                            <th>Closed</th>
+                                            <th>Unresponsive</th>
+                                            <th>Not Interested</th>
+                                        {% endif %}
+
+                                    </tr>
+                                {% endwith %}
+
+                            {% elif request.user|role_validity:'admin' %}
+                                <tr>
+                                    <th>Employee ID</th>
+                                    <th>Name</th>
+                                    {% comment %} <th>Department</th> {% endcomment %}
+                                    {% comment %} <th>Designation</th> {% endcomment %}
+                                    <th>Team Leader</th>
+                                    <th>Last Working Day</th>
+                                </tr>
+                            {% endif %}
+                          </thead>
+                          <tbody>
+                            <!-- row 1 -->
+
+                            {% if request.user|role_validity:'super_admin' or request.user|role_validity:'business_development_associate' or request.user|role_validity:'business_development_team_lead' or request.user.is_admin %}
+
+                                {% if secondary_data|length > 0 %}
+                                    {% with request.GET.data_type|default:'overall_performance' as data_type %}
+                                        {% if data_type == 'overall_performance' %}
+                                                {% for s in secondary_data %}
+                                                    <tr>
+                                                        <th class="capitalize">{{s.name.name}}</th>
+                                                        <td>{{s.assigned|length}}</td>
+                                                        <td>{{s.unassigned_leads|length}}</td>
+                                                        <td>{{s.open|length}}</td>
+                                                        <td>{{s.closed|length}}</td>
+                                                        <td>{{s.unresponsive|length}}</td>
+                                                        <td>{{s.not_interested|length}}</td>
+                                                        <td>{% with closed=s.closed|length assigned=s.assigned|length %}{{ closed|conversion_rate:assigned }}{% endwith %}%</td>
+                                                    <tr>
+                                                {% endfor %}
+                                        {% elif data_type == 'associate_level_performance' %}
+                                            {% for s in secondary_data %}
+                                                <tr>
+                                                    <th class="capitalize">{{s.name.name}}</th>
+                                                    <td class="capitalize">{{s.name.team_leader.name}}</td>
+                                                    {% comment %} <td class="capitalize">{{s.name.department.title|customreplacespace:'_'}}</td> {% endcomment %}
+                                                    <td>{{s.assigned|length}}</td>
+                                                    <td>{{s.open|length}}</td>
+                                                    <td>{{s.closed|length}}</td>
+                                                    <td>{{s.unresponsive|length}}</td>
+                                                    <td>{{s.not_interested|length}}</td>
+                                                    <td>{% with closed=s.closed|length assigned=s.assigned|length %}{{ closed|conversion_rate:assigned }}{% endwith %}%</td>
+                                                <tr>
+                                                {% endfor %}
+                                        {% elif data_type == 'service_level_performance' %}
+                                            {% for s in secondary_data %}
+                                                <tr>
+                                                    <th class="capitalize">{{s.service}}</th>
+                                                    <td class="capitalize">{{s.marketplace}}</td>
+                                                    <td>{{s.assigned|length}}</td>
+                                                    <td>{{s.open_leads|length}}</td>
+                                                    <td>{{s.closed|length}}</td>
+                                                    <td>{{s.unresponsive|length}}</td>
+                                                    <td>{{s.not_interested|length}}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endwith %}
+                                {% else %}
+                                    <th class="flex justify-center">No Data</th>
+                                {% endif %}
+
+                              </tr>  
+
+                            {% elif request.user|role_validity:'admin' %}
+                              {% for n in notice_period %}
+                                <tr>
+                                    <th>{{n.employee_id}}</th>
+                                    <td class="capitalize">{{n.name}}</td>
+                                    {% comment %} <td class="capitalize">{{n.department.title|customreplacespace:'_'}}</td> {% endcomment %}
+                                    {% comment %} <td class="capitalize">{{n.designation.title|customreplacespace:'_'}}</td> {% endcomment %}
+                                    <td class="capitalize">{{n.team_leader.name}}</td>
+                                    <td></td>
+                                </tr>
+                              {% endfor %}
+                            {% endif %}
+
+                                    
+
+                          </tbody>
+                        </table>
+                      </div>
+
+                </div>
+            </div>
+
+            <div class="w-[300px] h-full bg-white rounded-xl mx-2">
+                <img class="h-full w-full" src="{% static "assets/images/dashboard_artboard.png" %}">
+            </div>
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+{% endblock  %}

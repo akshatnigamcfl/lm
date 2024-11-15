@@ -1,0 +1,434 @@
+{% extends "layout/layout.html" %}
+
+{% block page_title %}Dashboard{% endblock  %}
+
+
+{% block page_body %}
+
+{% load static %}
+{% load poll_extras %}
+
+
+<div class="w-full h-full py-1 px-4">
+    <div class="w-full h-full p-1 rounded-3xl bg-gray-100">
+        
+        <div class="w-full h-[100%] flex p-2">
+            <div class="w-[70%] h-full flex flex-col">
+
+                <div class="w-full h-[60%] flex flex-col">
+                    <h2 class="h-[50px] flex items-center text-[#67B037] font-bold">My Info</h2>
+                    <div class="h-[calc(100%-50px)] flex flex-wrap justify-evenly">
+                        <div class="w-[48%] h-10 flex">
+                            <div class="w-1/4 text-sm">Employee ID</div>
+                            <div class="w-3/4">
+                                <select disabled class="rounded-xl h-full w-full px-2">
+                                    <option disabled selected>{{request.user.employee_id}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="w-[48%] h-10 flex">
+                            <div class="w-1/4 text-sm">Name</div>
+                            <div class="w-3/4">
+                                <select disabled class="rounded-xl h-full w-full px-2">
+                                    <option disabled selected>{{request.user.name}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="w-[48%] h-10 flex">
+                            <div class="w-1/4 text-sm">Email Id</div>
+                            <div class="w-3/4">
+                                <select disabled class="rounded-xl h-full w-full px-2">
+                                    <option disabled selected>{{request.user.email}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        {% comment %} <div class="w-[48%] h-10 flex">
+                            <div class="w-1/4 text-sm">Department</div>
+                            <div class="w-3/4">
+                                <select disabled class="rounded-xl h-full w-full px-2">
+                                    <option disabled selected>{{request.user.department.title}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="w-[48%] h-10 flex">
+                            <div class="w-1/4 text-sm">Designation</div>
+                            <div class="w-3/4">
+                                <select disabled class="rounded-xl h-full w-full px-2">
+                                    <option disabled selected>{{request.user.designation.title}}</option>
+                                </select>
+                            </div>
+                        </div> {% endcomment %}
+                        {% comment %} <div class="w-[48%] h-10 flex">
+                            <div class="w-1/4 text-sm">Director</div>
+                            <div class="w-3/4">
+                                <select disabled class="rounded-xl h-full w-full px-2">
+                                    <option disabled selected>{{request.user.director.name}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="w-[48%] h-10 flex">
+                            <div class="w-1/4 text-sm">User Manager</div>
+                            <div class="w-3/4">
+                                <select disabled class="rounded-xl h-full w-full px-2">
+                                    <option disabled selected>{{request.user.user_manager.name}}</option>
+                                </select>
+                            </div>
+                        </div> {% endcomment %}
+                        {% comment %} <div class="w-[48%] h-10 flex">
+                            <div class="w-1/4 text-sm">Lead Manager</div>
+                            <div class="w-3/4">
+                                <select disabled class="rounded-xl h-full w-full px-2">
+                                    <option disabled selected>{{request.user.lead_manager.name}}</option>
+                                </select>
+                            </div>
+                        </div> {% endcomment %}
+                        <div class="w-[48%] h-10 flex">
+                            <div class="w-1/4 text-sm">Team Manager</div>
+                            <div class="w-3/4">
+                                <select disabled class="rounded-xl h-full w-full px-2">
+                                    <option disabled selected>{{request.user.reporting_manager.name}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="w-[48%] h-10 flex">
+                            <div class="w-1/4 text-sm">Employee Status</div>
+                            <div class="w-3/4">
+                                <select disabled class="rounded-xl h-full w-full px-2">
+                                    <option disabled selected>{{request.user.employee_status.title}}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full h-[60%] flex flex-col">
+                    <h2 class="h-[50px] flex items-center text-[#67B037] font-bold">Leave History</h2>
+                    <div class="overflow-x-auto h-full overflow-y-scroll">
+                        <table class="table table-zebra">
+                          <thead>
+                            <tr>
+                              <th></th>
+                              <th>From</th>
+                              <th>To</th>
+                              <th>Notes</th>
+                              <th>Status</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                                {% for r in request.user.employee_leaves.all %}
+                                    <tr>
+                                        <th></th>
+                                        <td>{{r.date_from}}</td>
+                                        <td>{{r.date_to}}</td>
+                                        <td>{{r.notes}}</td>
+                                        <td>{{r.status.title}}</td>
+                                        <td class="flex">
+
+                                            <div
+
+                                            data-leave-id="{{r.id}}"
+                                            data-date-from="{{r.date_from|date:"Y-m-d"}}"
+                                            data-date-to="{{r.date_from|date:"Y-m-d"}}"
+                                            data-notes="{{r.notes}}"
+
+                                            class='view_edit cursor-pointer h-7 w-7 flex justify-center items-center bg-green-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_view_white.png" %}"></div>
+
+                                            {%if r.status.title == 'pending' %}
+                                            <div
+                                            data-leave-id="{{r.id}}"
+                                            class='cancel cursor-pointer h-7 w-7 flex justify-center items-center bg-red-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_cancel_white.png" %}"></div>
+                                            {% endif %}
+
+
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                      </div>
+
+                </div>
+
+            </div>
+            <div class="w-[40%] h-full flex justify-end">
+                <button class="apply_for_leave btn btn-success text-white">Apply For Leave</button>
+            </div>
+            {% comment %} <div class="overflow-x-auto"> {% endcomment %}
+                {% comment %} <table class="table table-zebra">
+                  <thead>
+                    {% if data != 'no data' %}
+                        {% if request.META.PATH_INFO == '/my-info' %}
+                          <tr>
+                            <th></th>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Designation</th>
+                            <th>Action</th>
+                          </tr>  
+                        {% else %}
+                            <div class="h-12 flex justify-center items-center bg-gray-200">no data</div>
+                        {% endif %}
+                    {% endif %}
+                  </thead>
+                  <tbody>
+
+                    {% if data != 'no data' %}
+
+                            {% with request.GET.type|default:'commercial' as parameter_value %}
+                                {% for d in data %}
+
+                                    <tr>
+                                        <th class="capitalize">{{forloop.counter}}</th>
+                                        <td class="capitalize">{{d.client_id}}</td>
+                                        <td class="capitalize">{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td class="capitalize">{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.commercial_approval.commercial}}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td class="capitalize">{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{ sc.associate.name }}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td class="capitalize">{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.designation.title|customreplacespace:'_' }}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td class="capitalize">{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.department.title|customreplacespace:'_' }}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td class="capitalize">{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.team_leader.name|customreplacespace:'_' }}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td class="capitalize">{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.service.service.service }}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td>
+                                            <div class="w-full h-full flex">
+                                                        <div 
+                                                        data-lead-id="{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}" 
+                                                        data-client-id="{{d.client_id}}" 
+                                                        
+                                                        class='approve cursor-pointer h-7 w-7 flex justify-center items-center bg-green-600 rounded-lg mx-1 p-1'>
+                                                            <img src="{% static "assets/images/action_approve_white.png" %}">
+                                                        </div>
+                                                        <div data-lead-id="{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-client-id="{{d.client_id}}"
+                                                        class='reject cursor-pointer h-7 w-7 flex justify-center items-center bg-red-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_reject_white.png" %}"></div>
+                                                        <div data-lead-id="{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-client-id="{{d.client_id}}"
+                                                        class='all_services cursor-pointer h-7 w-7 flex justify-center items-center bg-[#3790B6] rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_all_services_white.png" %}"></div>
+                                                        
+                                                        <div data-lead-id="{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-client-id="{{d.client_id}}"
+
+                                                        data-request-id="{{d.request_id}}"
+                                                        data-provider-id="{{d.provider_id}}"
+                                                        data-requester-id="{{d.requester_id}}"
+                                                        data-client-name="{{d.client_name}}"
+                                                        data-email-id="{{d.email_id}}"
+                                                        data-contact-number="{{d.contact_number}}"
+                                                        data-requester-location="{{d.requester.location}}"
+                                                        data-business-name="{{d.business_name}}"
+                                                        data-requester-sell-in-country="{{d.requester_sell_in_country}}"
+                                                        data-gst="{{d.gst}}"
+                                                        data-service-request-type="{{d.service_request_type}}"
+                                                        data-upload-date="{{d.upload_date.year}}-{{d.upload_date.month}}-{{d.upload_date.day}}"
+                                                        data-seller-address="{{d.seller_address}}"
+                                                        data-lead-owner-id="{{d.lead_owner.id}}"
+                                                        data-lead-owner="{{d.lead_owner.name}}"
+                                                        data-client-turnover-id="{{d.client_turnover.id}}"
+                                                        data-client-turnover="{{d.client_turnover}}"
+                                                        data-segment="{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.service.segment.id}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-associate-id="{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.id}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-associate="{% for sc in d.service_category_all.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.name}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-business-category="{{d.business_category}}"
+                                                        data-hot-lead="{{d.hot_lead}}"
+
+                                                        class='view_edit cursor-pointer h-7 w-7 flex justify-center items-center bg-green-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_view_white.png" %}"></div>
+                                        </div>
+                                      </td>
+                                  </tr>
+                                {% endfor %}
+                            {% endwith %}
+
+                    {% endif %}
+
+                  </tbody>
+                </table> {% endcomment %}
+              {% comment %} </div> {% endcomment %}
+        </div>
+
+        <div class="flex justify-center items-center h-[50px]">
+            
+            {% if pages != 'no data' %}
+                {% include 'layout/pagination.html' with data=data %}
+            {% endif %} 
+
+            {% comment %} <div class="join">
+                <button class="join-item btn btn-sm btn-active">2</button>
+            </div> {% endcomment %}
+        </div>
+    </div>
+</div>
+
+
+
+{% comment %} <script src="{% static "assets/js/confirmation_popup.js" %}" ></script> {% endcomment %}
+{% comment %} <script src="{% static "assets/js/user_edit_popup.js" %}" ></script> {% endcomment %}
+<script src="{% static "assets/js/fetch.js" %}" ></script>
+<script src="{% static "assets/js/poper.js" %}" ></script>
+<script src="{% static "assets/js/getcookies.js" %}" ></script>
+
+
+<script>
+
+
+    function userEditPopUp(data){
+
+        const popup = document.createElement('div');
+        popup.classList.value = 'w-screen h-screen absolute top-0 left-0 flex justify-center items-center bg-[rgba(0,0,0,0.7)] '
+        popup.innerHTML = `
+        
+        <form action="${data ? '{% url "update_user_account" %}' : '{% url "create_user_account" %}'}" id="add_user" method="POST">
+            <div class="card w-[400px] h-[400px] bg-white text-neutral-content overflow-hidden">
+                <div class="h-[35px] relative flex justify-center items-center text-white bg-slate-900">Apply For Leave</div>
+                    <img class="close_btn absolute h-6 w-6 top-[5px] right-[5px]" src="{% static "assets/images/close_button.png" %}">
+
+                    <div class="h-[calc(100%-100px)] w-full flex flex-col justify-center p-3 overflow-y-scroll bg-gray-50 text-slate-900 text-xs">
+
+                    {% csrf_token %}
+                    
+                    <div class="w-[100%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">From</div>
+                        <input type="date" class="inps h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl" placeholder="From" name="date_from" value="${data ? data.date_from : ''}">
+                    </div>
+
+                    <div class="w-[100%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">To</div>
+                        <input type="date" class="inps h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl" name="date_to" value="${data ? data.date_to : ''}">
+                    </div>
+
+                    <div class="w-[100%] h-20 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Notes</div>
+                        <textarea type="text" class="inps h-full resize-none w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl p-2" name="notes">${data ? data.notes : ''}</textarea>
+                    </div>
+
+
+                </div>
+                <button data-leave-id="${data?data.leave_id:''}" class=" ${data?'update':'apply_for_leave_submit'} btn btn-success text-white">Success</button>
+            </div>
+        </form>
+        `
+
+
+        popup.querySelector('#add_user').onsubmit = function() {
+          const select = popup.querySelector('.department');
+          if (select.value === "") {
+            console.log('working department')
+            return false; // Prevent form submission
+          }
+          return true; // Allow form submission
+        };
+        
+        document.body.append(popup)
+
+
+        const update = document.querySelector('.update');
+            if (update){
+                update.addEventListener('click', async (e)=>{
+                    e.preventDefault()
+                    const inps = popup.querySelectorAll('.inps')
+                    main_data = {}
+    
+                    inps.forEach((e,i)=>{
+                            main_data[e.name] = e.value===''?'-':e.value
+                    })
+    
+    
+                    let url = '{% url "edit_leave" leave_id=0 %}'.replaceAll(0,update.getAttribute('data-leave-id'))
+    
+                    let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(main_data))
+                    if (a){
+                        poperFunction(a.status,a.message, a.status===200?true:false)
+                    }
+    
+                })
+        }
+
+
+        const apply_for_leave_submit = document.querySelector('.apply_for_leave_submit');
+        if (apply_for_leave_submit){
+            apply_for_leave_submit.addEventListener('click', async (e)=>{
+                e.preventDefault()
+                const inps = popup.querySelectorAll('.inps')
+                main_data = {}
+
+                inps.forEach((e,i)=>{
+                        main_data[e.name] = e.value===''?'-':e.value
+                })
+
+
+                let url = '{% url "apply_for_leave" %}'
+
+                let a = await ftN(url, 'POST', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(main_data))
+                if (a){
+                    poperFunction(a.status,a.message, a.status===200?true:false)
+                }
+
+            })
+        }
+    
+        const close_btn = popup.querySelectorAll('.close_btn');
+        close_btn.forEach(e=>{
+            e.addEventListener('click',()=>{
+                popup.remove()
+            })
+        })
+    
+        const edit_toggle = popup.querySelector('.edit_toggle');
+        if (edit_toggle){
+            edit_toggle.addEventListener('click',()=>{
+              const inps = document.querySelectorAll('.inps');
+            
+              inps.forEach(e=>{
+                if (!edit_toggle.checked){
+                  e.disabled = true
+                } else {
+                  e.disabled = false
+                }
+              })
+            })
+        }
+    
+    }
+
+
+
+const cancel = document.querySelector('.cancel');
+if (cancel){
+    cancel.addEventListener('click', async()=>{
+
+        let url = '{% url "cancel_leave" leave_id=0 %}'.replaceAll(0,cancel.getAttribute('data-leave-id'))
+        let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`} )
+        if (a){
+            poperFunction(a.status, a.message, true)
+        }
+    })
+}
+
+
+    const view_edit = document.querySelectorAll('.view_edit');
+    view_edit.forEach(e=>{
+        e.addEventListener('click',()=>{
+            data = {
+                leave_id: e.getAttribute('data-leave-id'),
+                date_from: e.getAttribute('data-date-from'),
+                date_to: e.getAttribute('data-date-to'),
+                notes: e.getAttribute('data-notes')
+                }
+
+                console.log(data)
+            userEditPopUp(data)
+        })
+    })
+
+    const apply_for_leave = document.querySelectorAll('.apply_for_leave');
+    apply_for_leave.forEach(e=>{
+        e.addEventListener('click',()=>{
+            userEditPopUp()
+        })
+    })
+
+
+</script>
+
+
+
+{% endblock  %}

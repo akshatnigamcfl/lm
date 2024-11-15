@@ -1,0 +1,508 @@
+{% extends "layout/layout.html" %}
+
+{% block page_title %}Dashboard{% endblock  %}
+
+
+{% block page_body %}
+
+{% load static %}
+{% load poll_extras %}
+
+
+{% comment %} {% if request.user.department.title == 'accounts' %} {% endcomment %}
+{% if request.user|role_validity:'accounts_team_lead' or request.user|role_validity:'accounts_associate' %}
+
+
+<div class="w-full h-full py-1 px-4">
+    <div class="w-full h-full p-1 rounded-3xl bg-gray-100">
+        
+        {% comment %} <div class="h-[50px] p-1 flex justify-end">
+            <div class="h-full w-72 px-4">
+                <div role="tablist" class="tabs tabs-boxed">
+
+                    {% with request.GET.type as parameter_value %}
+                        <a href="?type=commercial{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab {% if not parameter_value or parameter_value == 'commercial' %}tab-active{% endif %}">Commecial</a>
+                        <a href="?type=foc{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab {% if parameter_value == 'foc' %}tab-active{% endif %}" role="tab" class="tab">FOC</a>
+                        <a href="?type=leaves{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab {% if parameter_value == 'leaves' %}tab-active{% endif %}" role="tab" class="tab">Leaves</a>
+                    {% endwith %}
+                </div>
+            </div>
+        </div> {% endcomment %}
+        
+        <div class="w-full h-[calc(100%-100px)] flex flex-col overflow-scroll p-2">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                  <!-- head -->
+                  <thead>
+                    {% if data != 'no data' %}
+                        {% if request.META.PATH_INFO == '/payments' %}
+                          <tr>
+                            {% comment %} <th></th> {% endcomment %}
+                            <th>Lead Id</th>
+                            <th>Client Name</th>
+                            <th>Contact Number</th>
+                            <th>Email ID</th>
+                            <th>Status</th>
+                            <th>Service</th>
+                            <th>Marketplace</th>
+                            <th>Associate</th>
+                            <th>Team Leader</th>
+                            <th>Action</th>
+                          </tr>  
+                        {% else %}
+                            <div class="h-12 flex justify-center items-center bg-gray-200">no data</div>
+                        {% endif %}
+                    {% endif %}
+                  </thead>
+                  <tbody>
+
+                    {% if data != 'no data' %}
+                    
+                                {% for d in data %}
+
+                                    {% for sc in d.service_category.all %}
+                                    
+                                        {% if sc|getStatus == 'payment_validation_pending'%}
+                                            <tr class='text-xs border-b border-slate-200 shadow-sm hover:shadow-md  rounded-xl'>
+                                                {% comment %} <th class="capitalize">{{forloop.counter}}</th> {% endcomment %}
+                                                <td class="px-[3px] py-1 capitalize">{{sc.lead_id}}</td>
+                                                <td class="px-[3px] py-1 capitalize">{{d.client_name}}</td>
+                                                <td class="px-[3px] py-1 capitalize">{{d.contact_number}}</td>
+                                                <td class="px-[3px] py-1 capitalize">{{d.email_id}}</td>
+                                                <td class="px-[3px] py-1 capitalize">{% with status=sc|getStatus %}{{status|customreplacespace:'_'}}{% endwith %}</td>
+                                                <td class="px-[3px] py-1 capitalize">{{sc.program.marketplace.service.service}}</td>
+                                                <td class="px-[3px] py-1 capitalize">{{sc.program.marketplace.marketplace}}</td>
+                                                <td class="px-[3px] py-1 capitalize">{{sc.associate.name}}</td>
+                                                <td class="px-[3px] py-1 capitalize">{{sc.associate.reporting_manager.name}}</td>
+                                                <td class="px-[3px] py-1">
+                                                    <div class="w-full h-full flex">
+                                                        {% comment %} {% with request.GET.type as parameter_value %} {% endcomment %}
+                                                            {% comment %} {% if not parameter_value or parameter_value == 'active' %} {% endcomment %}
+                                                                {% comment %} <div 
+                                                                data-lead-id="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}" 
+                                                                data-client-id="{{d.client_id}}" 
+                                                                
+                                                                class='approve cursor-pointer h-7 w-7 flex justify-center items-center bg-green-600 rounded-lg mx-1 p-1'>
+                                                                    <img src="{% static "assets/images/action_approve_white.png" %}">
+                                                                </div>
+                                                                <div data-lead-id="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}"
+                                                                data-client-id="{{d.client_id}}"
+                                                                class='reject cursor-pointer h-7 w-7 flex justify-center items-center bg-red-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_reject_white.png" %}"></div>
+                                                                <div data-lead-id="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}"
+                                                                data-client-id="{{d.client_id}}"
+                                                                class='all_services cursor-pointer h-7 w-7 flex justify-center items-center bg-[#3790B6] rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_all_services_white.png" %}"></div> {% endcomment %}
+                                                                
+                                                        <div 
+                                                            data-client-id="{{d.client_id}}"
+                                                            data-lead-id="{{sc.lead_id}}"
+                                                            data-request-id="{{d.request_id}}"
+                                                            data-provider-id="{{d.provider_id}}"
+                                                            data-requester-id="{{d.requester_id}}"
+                                                            data-client-name="{{d.client_name}}"
+                                                            data-email-id="{{d.email_id}}"
+                                                            data-contact-number="{{d.contact_number}}"
+                                                            data-requester-location="{{d.requester.location}}"
+                                                            data-business-name="{{d.business_name}}"
+                                                            data-requester-sell-in-country="{{d.requester_sell_in_country}}"
+                                                            data-gst="{{d.gst}}"
+                                                            data-service-request-type="{{d.service_request_type}}"
+                                                            data-upload-date="{{d.upload_date.year}}-{{d.upload_date.month}}-{{d.upload_date.day}}"
+                                                            data-seller-address="{{d.seller_address}}"
+                                                            data-lead-owner-id="{{d.lead_owner.id}}"
+                                                            data-lead-owner="{{d.lead_owner.name}}"
+                                                            data-client-turnover-id="{{d.client_turnover.id}}"
+                                                            data-client-turnover="{{d.client_turnover}}"
+                                                            data-mou="{{sc.mou}}"
+                                                            data-payment-proof="{{sc.payment_proof}}"
+
+
+                                                            
+                                                            data-commercial="{{sc.pricing.commercials}}"
+                                                            data-program-id="{{sc.program.id}}"
+                                                            data-program="{{sc.program.program}}"
+                                                            data-marketplace-id="{{sc.program.marketplace.id}}"
+                                                            data-marketplace="{{sc.program.marketplace.marketplace}}"
+                                                            data-service-id="{{sc.program.marketplace.service.id}}"
+                                                            data-service="{{sc.program.marketplace.service.service}}"
+                                                            data-segment-id="{{sc.program.marketplace.service.segment.id}}"
+                                                            data-segment="{{sc.program.marketplace.service.segment.segment}}"
+                                                            data-payment-model-id="{{sc.program.payment_model.id}}"
+                                                            data-payment-model="{{sc.program.payment_model}}"
+                                                            data-payment-terms-id="{{sc.program.payment_terms.id}}"
+                                                            data-payment-terms="{{sc.program.payment_terms}}"
+                                                            data-mou-required="{{sc.program.mou_required}}"
+                                                            data-paid-by-id="{{sc.program.paid_by.id}}"
+                                                            data-paid-by="{{sc.program.paid_by}}"
+                                                            data-comments="{{sc.program.comment}}"
+
+                                                            data-associate-id="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.id}}{% endif %}{% endif %}{% endfor %}"
+                                                            data-associate="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.name}}{% endif %}{% endif %}{% endfor %}"
+                                                            data-business-category="{{d.business_category}}"
+                                                                data-hot-lead="{{d.hot_lead}}"
+
+                                                            class='view_edit cursor-pointer h-6 w-6 flex justify-center items-center bg-green-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_view_white.png" %}">
+                                                        </div>
+                                                            {% comment %} {% elif parameter_value and parameter_value == 'archive' %} {% endcomment %}
+                                                                {% comment %} <div data-user-id="{{d.id}}" class='restore_user cursor-pointer h-7 w-7 flex justify-center items-center bg-[#5BABE5] rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_restore_white.png" %}"></div> {% endcomment %}
+                                                            {% comment %} {% endif %} {% endcomment %}
+                                                        {% comment %} {% endwith %} {% endcomment %}
+                                                </div>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+
+                        {% comment %} {% endfor %} {% endcomment %}
+                    
+                    {% else %}
+                        
+                    {% endif %}
+
+                  </tbody>
+                </table>
+              </div>
+        </div>
+
+        <div class="flex justify-center items-center h-[50px]">
+            
+            {% if pages != 'no data' %}
+                {% include 'layout/pagination.html' with data=data %}
+            {% endif %} 
+
+            {% comment %} <div class="join">
+                <button class="join-item btn btn-sm btn-active">2</button>
+            </div> {% endcomment %}
+        </div>
+    </div>
+</div>
+
+
+
+{% comment %} <script src="{% static "assets/js/confirmation_popup.js" %}" ></script> {% endcomment %}
+{% comment %} <script src="{% static "assets/js/user_edit_popup.js" %}" ></script> {% endcomment %}
+<script src="{% static "assets/js/fetch.js" %}" ></script>
+<script src="{% static "assets/js/poper.js" %}" ></script>
+<script src="{% static "assets/js/getcookies.js" %}" ></script>
+
+
+<script>
+
+
+    function userEditPopUp(data){
+
+        console.log(data)
+
+        const popup = document.createElement('div');
+        popup.classList.value = 'w-screen h-screen absolute top-0 left-0 flex justify-center items-center bg-[rgba(0,0,0,0.7)] p-10'
+        popup.innerHTML = `
+        
+        <form action="${data ? '{% url "update_user_account" %}' : '{% url "create_user_account" %}'}" id="add_user" method="POST" class="h-full w-full">
+            
+        
+            <div class="card w-full h-full bg-white text-neutral-content overflow-hidden">
+                <div class="h-[35px] relative flex justify-center items-center text-white bg-slate-900">View Approval</div>
+                <img class="close_btn absolute h-6 w-6 top-[5px] right-[5px]" src="{% static "assets/images/close_button.png" %}">
+
+                <div class="h-[calc(100%-35px)] w-full flex bg-gray-50 text-slate-900 text-xs">
+
+                    <div class="h-full w-[40%] border-r p-2">
+                        <div class="w-full h-2/4 py-2">
+                            <div class="h-[30px] w-full text-base font-weight">Lead Info</div>
+                            <div class="h-[calc(100%-30px)] w-full lead_info_content overflow-auto border rounded p-1">
+                            </div>
+                        </div>
+                        <div class="w-full h-2/4 py-2">
+                            <div class="h-[30px] w-full text-base font-weight">Commercial Info</div>
+                            <div class="h-[calc(100%-30px)] w-full commercial_info_content overflow-auto border rounded p-1">
+
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="h-full w-[60%] p-2"> 
+                        {% csrf_token %}
+                        <div class="h-[50px] p-1 flex justify-end">
+                            {% comment %} <div class="h-full w-72 px-4"> {% endcomment %}
+                                <div role="tablist" class="tabs tabs-boxed">
+
+                                    {% with request.GET.type as parameter_value %}
+                                        <a role="tab" name="payment" class="view_approval_tab tab tab-active">Payment</a>
+                                        ${ data.mou_required === 'True' || data.mou_required === true ? '<a role="tab" name="mou" class="view_approval_tab tab">MOU</a>' : '' }
+                                    {% endwith %}
+                                </div>
+                            {% comment %} </div> {% endcomment %}
+                        </div>
+                        <div class="main_view h-[calc(100%-100px)] bg-slate-300 flex justify-center items-center px-2 rounded-lg">
+                        </div>
+                            
+                        <div class="flex justify-evenly h-[50px] items-center">
+                            <button data-lead-id="${data.lead_id}" class="inps approve update btn btn-sm bg-[#67B037] text-white">Approve</button>
+                            {% comment %} <button class="inps pending update btn btn-sm bg-[#E2B30F] text-white">Pending</button> {% endcomment %}
+                            {% comment %} <button class="inps doubtful update btn btn-sm bg-[#8741BE] text-white">Doubtful</button> {% endcomment %}
+                            <button data-lead-id="${data.lead_id}" class="inps reject update btn btn-sm bg-[#C71E13] text-white">Reject</button>
+                        </div>
+
+                    </div>
+                </div>
+
+
+            </div>
+        </form>
+        `
+
+        document.body.append(popup)
+
+    
+        const close_btn = popup.querySelectorAll('.close_btn');
+        close_btn.forEach(e=>{
+            e.addEventListener('click',()=>{
+                popup.remove()
+            })
+        })
+
+        const lead_data = {
+            client_id : data.client_id,
+            lead_id : data.lead_id,
+            request_id : data.request_id,
+            provider_id : data.provider_id,
+            requester_id : data.requester_id,
+            client_name : data.client_name,
+            email_id : data.email_id,
+            contact_number : data.contact_number,
+            requester_location: data.requester_location,
+            business_name : data.business_name,
+            requester_sell_in_country : data.requester_sell_in_country,
+            gst : data.gst,
+            service_request_type : data.service_request_type,
+            upload_date : data.upload_date,
+            seller_address : data.seller_address,
+            lead_owner_id : data.lead_owner_id,
+            lead_owner : data.lead_owner,
+            client_turnover_id : data.client_turnover_id,
+            client_turnover : data.client_turnover,
+            mou : data.mou,
+            payment_proof : data.payment_proof,
+        }
+        
+
+        const commercial_data = {
+            commercial : data.commercial,
+            service : data.service,
+            marketplace : data.marketplace,
+            program : data.program,
+            mou_required : data.mou_required,
+            paid_by : data.paid_by,
+            comments : data.comment,
+            payment_model : data.payment_model,
+            payment_terms : data.payment_terms,
+            commercials : data.commercials,
+            visibility : data.visibility,
+        }
+
+        
+        const lead_info_content = document.querySelector('.lead_info_content');
+        for ( let key in lead_data ){
+            lead_info_content.innerHTML += `
+                <div class="h-auto flex py-1">
+                    <div class="w-[40%] font-bold capitalize">${key.replaceAll('_', ' ')}</div>
+                    <div class="w-[60%]">${ lead_data[key] === undefined ? '-' : lead_data[key]  }</div>
+                </div>
+            `;
+        }
+        
+
+        const commercial_info_content = document.querySelector('.commercial_info_content');
+        for ( let key in commercial_data ){
+            commercial_info_content.innerHTML += `
+                <div class="h-auto flex py-1">
+                    <div class="w-[40%] font-bold capitalize">${key.replaceAll('_', ' ')}</div>
+                    <div class="w-[60%]">${ commercial_data[key] === undefined ? '-' : commercial_data[key]  }</div>
+                </div>
+            `;
+        }
+
+
+
+        const main_view = document.querySelector('.main_view');
+
+        function paymentTabInit(data){
+
+            const exemptPayment = ['amazon paid', 'flipkart paid', 'foc'];
+
+            if ( exemptPayment.includes(data.paid_by.trim())){
+                const approveBtn = popup.querySelector('.approve');
+                approveBtn.disabled = true;
+                main_view.innerHTML = `
+                    <div>
+                        <div class="text-base font-bold my-4">Select all checkbox to proceed</div>
+                        <div class="h-8 flex items-center"><input type="checkbox" class="confirm_inp h-4 w-4 mr-3"><div>This service is paid by ${data.paid_by}</div></div>
+                        <div class="h-8 flex items-center"><input type="checkbox" class="confirm_inp h-4 w-4 mr-3"><div>Raise invoice and approve below</div></div>.
+                    </div>
+                `;
+
+                const inpBtn = main_view.querySelectorAll('.confirm_inp');
+                Array.from(inpBtn).forEach((e,i,a)=>{
+                    console.log()
+                    e.onchange = function (){
+                        if ('inpBtn.filter', e.checked ,a.filter(f=>f.checked).length === a.length) {
+                            approveBtn.disabled = false
+                        } else {
+                            approveBtn.disabled = true
+                        } ; 
+                    }
+                });
+
+            } else {
+
+                if (data.payment_proof){
+
+                    if (data.payment_proof.toLocaleLowerCase().includes('pdf')){
+                        main_view.innerHTML = `
+                        <a class="cursor-pointer py-4 px-6 bg-[#67B037] rounded-xl" href="/media/${data.payment_proof}" target="_blank" >View file</a>
+                        `
+                    } else {
+                        main_view.innerHTML = `
+                        <div class="flex flex-col">
+                            <img class="h-[80%]" src="/media/${data.payment_proof}" >
+                            <a class="cursor-pointer text-center py-4 px-6 bg-[#67B037] rounded-xl" href="/media/${data.payment_proof}" target="_blank" >View file</a>
+                        </div>
+                        `
+                    }
+                }
+            }
+
+        } paymentTabInit(data)
+        
+
+        const view_approval_tab = document.querySelectorAll('.view_approval_tab');
+        view_approval_tab.forEach(e=>{
+            e.addEventListener('click',()=>{
+                main_view.innerHTML=``                
+                view_approval_tab.forEach(e=>{
+                    e.classList.remove('tab-active')
+                    })
+                e.classList.add('tab-active')
+
+                if (e.name === 'payment'){
+
+                    paymentTabInit(data)
+
+                } else if (e.name === 'mou') {
+
+                    if (data.mou_required == 'True' || data.mou_required == true ){
+   
+                        if (data.mou){
+                            if (data.mou.toLocaleLowerCase().includes('pdf')){
+                                main_view.innerHTML = `
+                                <a class="cursor-pointer py-4 px-6 bg-[#67B037] rounded-xl" href="/media/${data.mou}" target="_blank" >View file</a>
+                                `
+                            } else {
+                                main_view.innerHTML = `
+                                <img class="h-[80%]" src="/media/${data.mou}" >
+                                <a class="cursor-pointer py-4 px-6 bg-[#67B037] rounded-xl" href="/media/${data.mou}" target="_blank" >View file</a>
+                                `
+                            }
+                        }
+
+                    } else {main_view.innerHTML = `mou not required`;}
+
+                }
+
+            })
+        })
+
+
+        let url = '{% url "update_payment_status" lead_id="**" payment_approval_status="00" %}'
+
+        const approve = document.querySelector('.approve');
+            approve.addEventListener('click', async (e)=>{
+                e.preventDefault()
+                let a = await ftN(url.replaceAll('**', approve.getAttribute('data-lead-id')).replaceAll('00','approved'), 'POST', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`})
+                if (a){
+                    poperFunction(a.status, a.message, a.status === 200?true:false)
+                }
+        })
+
+    
+        const reject = document.querySelector('.reject');
+            reject.addEventListener('click', async (e)=>{
+                e.preventDefault()
+                let a = await ftN(url.replaceAll('**', reject.getAttribute('data-lead-id')).replaceAll('00','rejected'), 'POST', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`})
+                if (a){
+                    poperFunction(a.status, a.message, a.status === 200?true:false)
+                }
+        })
+
+
+    }
+
+
+
+    const view_edit = document.querySelectorAll('.view_edit');
+    view_edit.forEach(e=>{
+        e.addEventListener('click',()=>{
+            data = {
+                client_id: e.getAttribute('data-client-id'),
+                lead_id: e.getAttribute('data-lead-id'),
+                request_id: e.getAttribute('data-request-id'),
+                provider_id: e.getAttribute('data-provider-id'),
+                requester_id: e.getAttribute('data-requester-id'),
+                client_name: e.getAttribute('data-client-name'),
+                email_id: e.getAttribute('data-email-id'),
+                contact_number: e.getAttribute('data-contact-number'),
+                requester_location: e.getAttribute('data-requester-location'),
+                business_name: e.getAttribute('data-business-name'),
+                requester_sell_in_country: e.getAttribute('data-requester-sell-in-country'),
+                gst: e.getAttribute('data-gst'),
+                service_request_type: e.getAttribute('data-service-request-type'),
+                upload_date: e.getAttribute('data-upload-date'),
+                seller_address: e.getAttribute('data-seller-address'),
+                lead_owner_id: e.getAttribute('data-lead-owner-id'),
+                lead_owner: e.getAttribute('data-lead-owner'),
+                client_turnover_id: e.getAttribute('data-client-turnover-id'),
+                client_turnover: e.getAttribute('data-client-turnover'),
+                segment: e.getAttribute('data-segment'),
+                associate_id: e.getAttribute('data-associate-id'),
+                associate: e.getAttribute('data-associate'),
+                business_category: e.getAttribute('data-business-category'),
+                mou: e.getAttribute('data-mou'),
+                payment_proof: e.getAttribute('data-payment-proof'),
+                commercial : e.getAttribute("data-commercial"),
+                program_id : e.getAttribute("data-program-id"),
+                program : e.getAttribute("data-program"),
+                marketplace_id : e.getAttribute("data-marketplace-id"),
+                marketplace : e.getAttribute("data-marketplace"),
+                service_id : e.getAttribute("data-service-id"),
+                service : e.getAttribute("data-service"),
+                segment_id : e.getAttribute("data-segment-id"),
+                segment : e.getAttribute("data-segment"),
+                payment_model_id : e.getAttribute("data-payment-model-id"),
+                payment_model : e.getAttribute("data-payment-model"),
+                payment_terms_id : e.getAttribute("data-payment-terms-id"),
+                payment_terms : e.getAttribute("data-payment-terms"),
+                mou_required : e.getAttribute("data-mou-required"),
+                paid_by_id : e.getAttribute("data-paid-by-id"),
+                paid_by : e.getAttribute("data-paid-by"),
+                comments : e.getAttribute("data-comments"),
+
+            }
+
+            userEditPopUp(data)
+        })
+    })
+
+
+</script>
+
+
+{% else %}
+
+    <script>
+        window.location.href="/"
+    </script>
+
+{% endif %}
+
+{% endblock  %}

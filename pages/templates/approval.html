@@ -1,0 +1,622 @@
+{% extends "layout/layout.html" %}
+
+{% block page_title %}Dashboard{% endblock  %}
+
+
+{% block page_body %}
+
+{% load static %}
+{% load poll_extras %}
+
+
+<div class="w-full h-full py-1 px-4">
+    <div class="w-full h-full p-1 rounded-3xl bg-gray-100">
+        
+        <div class="h-[50px] p-1 flex justify-end">
+            <div class="h-full w-72 px-4">
+                <div role="tablist" class="tabs tabs-boxed">
+
+                    {% if request.user|role_validity:'super_admin' %}
+                        {% with request.GET.type|default:'leaves' as parameter_value %}
+                        <a href="?type=leaves{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'type' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab text-xs {% if parameter_value == 'leaves' %}tab-active{% endif %}" role="tab" class="tab text-xs">Leaves</a>
+                            <a href="?type=commercial{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'type' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab text-xs {% if parameter_value == 'commercial' %}tab-active{% endif %}">Commecial</a>
+                            {% comment %} <a href="?type=foc{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'type' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab text-xs {% if parameter_value == 'foc' %}tab-active{% endif %}" role="tab" class="tab text-xs">FOC</a> {% endcomment %}
+                        {% endwith %}
+                    {% elif request.user|role_validity:'business_development_team_lead' %}
+                        {% with request.GET.type|default:'leaves' as parameter_value %}
+                            <a href="?type=leaves{% if dict_length > 0%}{% for k,v in request.GET.items %}{% if k != 'type' %}&{{k}}={{v}}{% endif %}{% endfor %}{% endif %}" role="tab" class="tab text-xs {% if parameter_value == 'leaves' %}tab-active{% endif %}" role="tab" class="tab text-xs">Leaves</a>
+                        
+                        {% endwith %}
+                    {% else %}
+                        <script>
+                            window.location.href = '/'
+                        </script>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+        
+        <div class="w-full h-[calc(100%-100px)] flex flex-col overflow-scroll p-2">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                  <!-- head -->
+                  <thead>
+                    {% if data != 'no data' %}
+                        {% if request.META.PATH_INFO == '/user_management' %}
+                          <tr>
+                            <th></th>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            {% comment %} <th>Department</th>
+                            <th>Designation</th> {% endcomment %}
+                            <th>Action</th>
+                          </tr>  
+                        {% elif request.META.PATH_INFO == '/approval' %}
+                            <tr>
+                                <th></th>
+
+                                {% if request.GET.type|default:'leaves' == 'leaves' %}
+                                    <th>Employee</th>
+                                    <th>From</th>
+                                    <th>To</th>
+                                    <th>Notes</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                {% else %}
+                                    <th>Client ID</th>
+                                    <th>Lead ID</th>
+                                    <th>Commercial</th>
+                                    <th>Associate</th>
+                                    {% comment %} <th>Designation</th>
+                                    <th>Department</th> {% endcomment %}
+                                    <th>Reporting Manager</th>
+                                    <th>Service</th>
+                                    <th>Action</th>
+                                {% endif %}
+                            </tr>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="h-12 flex justify-center items-center bg-gray-200">no data</div>
+                    {% endif %}
+                  </thead>
+                  <tbody class="text-xs">
+
+                    {% if data != 'no data' %}
+                        {% if request.GET.type|default:'leaves' == 'leaves' %}
+                            {% for d in data %}
+                                {% comment %} {% for empleave in d.employee_leaves.all %} {% endcomment %}
+                                <tr>
+                                    <th class="capitalize">{{forloop.counter}}</th>
+                                    <td class="capitalize">{{ d.employee.name }}</td>
+                                    <td class="capitalize">{{ d.date_from }}</td>
+                                    <td class="capitalize">{{ d.date_to }}</td>
+                                    <td class="capitalize">{{ d.notes }}</td>
+                                    <td class="capitalize">{{ d.status.title }}</td>
+                                    <td class="capitalize flex">
+                                        <div 
+                                        data-leave-id="{{d.id}}" 
+                                        
+                                        class='approve_leave cursor-pointer h-7 w-7 flex justify-center items-center bg-[#5BCCE5] rounded-lg mx-1 p-1'>
+                                            <img src="{% static "assets/images/action_approve_white.png" %}">
+                                        </div>
+
+                                        <div 
+                                        data-leave-id="{{d.id}}" 
+                                        class='reject_leave cursor-pointer h-7 w-7 flex justify-center items-center bg-red-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_reject_white.png" %}"></div>
+                                     
+                                    </td>
+                                </tr>
+                                {% comment %} {% endfor %} {% endcomment %}
+                            {% endfor %}
+                        {% else %}
+                            {% with request.GET.type as parameter_value %}
+                                {% for d in data %}
+
+                                    <tr>
+                                        <th class="capitalize">{{forloop.counter}}</th>
+                                        <td class="capitalize">{{d.client_id}}</td>
+                                        <td class="capitalize">{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td class="capitalize">{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.commercial_approval.commercial}}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td class="capitalize">{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{ sc.associate.name }}{% endif %}{% endif %}{% endfor %}</td>
+                                        {% comment %} <td class="capitalize">{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.designation.title|customreplacespace:'_' }}{% endif %}{% endif %}{% endfor %}</td> {% endcomment %}
+                                        {% comment %} <td class="capitalize">{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.department.title|customreplacespace:'_' }}{% endif %}{% endif %}{% endfor %}</td> {% endcomment %}
+                                        <td class="capitalize">{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.reporting_manager.name|customreplacespace:'_' }}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td class="capitalize">{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.program.marketplace.service.service }}{% endif %}{% endif %}{% endfor %}</td>
+                                        <td>
+                                            <div class="w-full h-full flex">
+                                                {% comment %} {% with request.GET.type as parameter_value %} {% endcomment %}
+                                                    {% comment %} {% if not parameter_value or parameter_value == 'active' %} {% endcomment %}
+                                                        <div 
+                                                        data-lead-id="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}" 
+                                                        data-client-id="{{d.client_id}}" 
+                                                        
+                                                        class='approve cursor-pointer h-7 w-7 flex justify-center items-center bg-green-600 rounded-lg mx-1 p-1'>
+                                                            <img src="{% static "assets/images/action_approve_white.png" %}">
+                                                        </div>
+                                                        <div data-lead-id="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-client-id="{{d.client_id}}"
+                                                        class='reject cursor-pointer h-7 w-7 flex justify-center items-center bg-red-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_reject_white.png" %}"></div>
+                                                        <div data-lead-id="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-client-id="{{d.client_id}}"
+                                                        class='all_services cursor-pointer h-7 w-7 flex justify-center items-center bg-[#3790B6] rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_all_services_white.png" %}"></div>
+                                                        
+                                                        <div data-lead-id="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.lead_id}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-client-id="{{d.client_id}}"
+
+                                                        data-request-id="{{d.request_id}}"
+                                                        data-provider-id="{{d.provider_id}}"
+                                                        data-requester-id="{{d.requester_id}}"
+                                                        data-client-name="{{d.client_name}}"
+                                                        data-email-id="{{d.email_id}}"
+                                                        data-contact-number="{{d.contact_number}}"
+                                                        data-requester-location="{{d.requester.location}}"
+                                                        data-business-name="{{d.business_name}}"
+                                                        data-requester-sell-in-country="{{d.requester_sell_in_country}}"
+                                                        data-gst="{{d.gst}}"
+                                                        data-service-request-type="{{d.service_request_type}}"
+                                                        data-upload-date="{{d.upload_date.year}}-{{d.upload_date.month}}-{{d.upload_date.day}}"
+                                                        data-seller-address="{{d.seller_address}}"
+                                                        data-lead-owner-id="{{d.lead_owner.id}}"
+                                                        data-lead-owner="{{d.lead_owner.name}}"
+                                                        data-client-turnover-id="{{d.client_turnover.id}}"
+                                                        data-client-turnover="{{d.client_turnover}}"
+                                                        data-segment="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.service.segment.id}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-associate-id="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.id}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-associate="{% for sc in d.service_category.all %}{% if sc.commercial_approval != None %}{% if sc.commercial_approval.approval_type.title == parameter_value %}{{sc.associate.name}}{% endif %}{% endif %}{% endfor %}"
+                                                        data-business-category="{{d.business_category}}"
+                                                        data-hot-lead="{{d.hot_lead}}"
+
+                                                        class='view_edit cursor-pointer h-7 w-7 flex justify-center items-center bg-green-600 rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_view_white.png" %}"></div>
+                                                    {% comment %} {% elif parameter_value and parameter_value == 'archive' %} {% endcomment %}
+                                                        {% comment %} <div data-user-id="{{d.id}}" class='restore_user cursor-pointer h-7 w-7 flex justify-center items-center bg-[#5BABE5] rounded-lg mx-1 p-1'><img src="{% static "assets/images/action_restore_white.png" %}"></div> {% endcomment %}
+                                                    {% comment %} {% endif %} {% endcomment %}
+                                                {% comment %} {% endwith %} {% endcomment %}
+                                        </div>
+                                      </td>
+                                  </tr>
+                                {% endfor %}
+                            {% endwith %}
+                        {% endif %}
+
+                        {% comment %} {% endfor %} {% endcomment %}                        
+
+                    {% endif %}
+
+                  </tbody>
+                </table>
+              </div>
+        </div>
+
+        <div class="flex justify-center items-center h-[50px]">
+            
+            {% if pages != 'no data' %}
+                {% include 'layout/pagination.html' with data=data %}
+            {% endif %} 
+
+            {% comment %} <div class="join">
+                <button class="join-item btn btn-sm btn-active">2</button>
+            </div> {% endcomment %}
+        </div>
+    </div>
+</div>
+
+
+
+{% comment %} <script src="{% static "assets/js/confirmation_popup.js" %}" ></script> {% endcomment %}
+{% comment %} <script src="{% static "assets/js/user_edit_popup.js" %}" ></script> {% endcomment %}
+<script src="{% static "assets/js/fetch.js" %}" ></script>
+<script src="{% static "assets/js/poper.js" %}" ></script>
+<script src="{% static "assets/js/getcookies.js" %}" ></script>
+
+
+<script>
+
+
+    function userEditPopUp(data){
+
+        console.log(data)
+
+        const popup = document.createElement('div');
+        popup.classList.value = 'w-screen h-screen absolute top-0 left-0 flex justify-center items-center bg-[rgba(0,0,0,0.7)] '
+        popup.innerHTML = `
+        
+        <form action="${data ? '{% url "update_user_account" %}' : '{% url "create_user_account" %}'}" id="add_user" method="POST">
+            <div class="card w-[700px] h-[500px] bg-white text-neutral-content overflow-hidden">
+                <div class="h-[35px] relative flex justify-center items-center text-white bg-slate-900">View/Edit User</div>
+                    <img class="close_btn absolute h-6 w-6 top-[5px] right-[5px]" src="{% static "assets/images/close_button.png" %}">
+                <div class="h-[40px] flex justify-between items-center text-white px-4 border-b bg-gray-200">
+                    <div class="text-slate-900 font-bold">User Management</div>
+                    <label class="flex justify-center text-slate-900"><span>Edit</span><input type="checkbox" class="edit_toggle toggle ml-3" /><label>
+                </div>
+                    <div class="h-[calc(100%-100px)] w-full flex justify-between flex-wrap p-3 overflow-y-scroll bg-gray-50 text-slate-900 text-xs">
+
+                    {% csrf_token %}
+                    
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Client Id</div>
+                        <input disabled type="text" class="inps h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" placeholder="Client Id" name="client_id" value="${data ? data.client_id : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Lead Id</div>
+                        <input disabled type="text" class="inps h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" name="lead_id" value="${data ? data.lead_id : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Provider Id</div>
+                        <input disabled type="text" class="h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" name="provider_id" value="${data ? data.provider_id : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Requester Id</div>
+                        <input disabled type="text" class="h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" name="requester_id" value="${data ? data.requester_id : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Requester Location</div>
+                        <input disabled type="text" class="h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" name="requester_location" value="${data ? data.requester_location : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Requester Sell In Country</div>
+                        <input disabled type="text" class="h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" name="requester_sell_in_country" value="${data ? data.requester_sell_in_country:''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Service Request Type</div>
+                        <input disabled type="text" class="h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" name="service_request_type" value="${data ? data.service_request_type:''}">
+                    </div>
+
+
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Client Name</div>
+                        <input disabled type="text" class="inps h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" name="client_name" value="${data ? data.client_name : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Email Id</div>
+                        <input disabled type="email" class="inps h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" name="email_id" value="${data ? data.email_id : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Contact Number</div>
+                        <input disabled type="text" class="inps h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" name="contact_number" value="${data ? data.contact_number : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Business Name</div>
+                        <input disabled type="text" class="inps h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" name="business_name" value="${data ? data.business_name : ''}">
+                    </div>
+
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Client Category</div>
+                        <select disabled required class="inps h-full select_inp client_turnover my-1 border w-3/4 px-2 rounded-xl capitalize text-slate-900" name="client_turnover">
+                            <option disabled selected value="null">select client turnover</option>
+                            {% for s in client_turnover %}<option value="{{s.id}}">{{s.title}}</option>{% endfor %}
+                        </select> 
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Business Category</div>
+                        <select disabled required class="inps select_inp business_category my-1 border w-3/4 h-10 px-2 rounded-xl capitalize text-slate-900" name="business_category">
+                          <option disabled selected value="null">Business Category</option>
+                          {% for s in business_category %}<option value="{{s.id}}">{{s.title}}</option>{% endfor %}
+                        </select>
+                    </div>
+
+
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">GST</div>
+                        <input disabled type="text" class="inps h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" value="${data ? data.gst : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Seller Address</div>
+                        <input disabled type="text" class="inps h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" value="${data ? data.seller_address : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Upload Date</div>
+                        <input disabled type="text" class="h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" value="${data ? data.upload_date : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Lead Owner</div>
+                        <input disabled type="text" class="h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" value="${data ? data.lead_owner : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Associate</div>
+                        <input disabled type="text" class="h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" value="${data ? data.associate : ''}">
+                    </div>
+
+                    <div class="w-[49%] h-10 flex my-1 ">
+                        <div class="flex items-center h-full w-1/4">Hot Lead</div>
+                        <input disabled type="text" class="h-full w-3/4 my-1 text-slate-900 border flex px-2 rounded-xl  capitalize" value="${data ? data.hot_lead : ''}">
+                    </div>
+
+                </div>
+                <button disabled class="inps update btn btn-success text-white">Success</button>
+            </div>
+        </form>
+        `
+        if (data.client_turnover){
+            const client_turnover = popup.querySelector('.client_turnover');
+            Array.from(client_turnover.options).forEach(e=>{
+                if(
+                    e.value === 'null'){e.remove()
+                }
+                if (Number(e.value) === Number(data.client_turnover)){
+                    e.selected = true
+                    e.disabled = true
+                }
+            })
+        }
+
+        if (data.business_category){
+            const business_category = popup.querySelector('.business_category');
+            Array.from(business_category.options).forEach(e=>{
+                if(e.value === 'null'){e.remove()}
+                if (Number(e.value) === Number(data.business_category)){
+                    e.selected = true
+                    e.disabled = true
+
+                    {% comment %} const opt = document.createElement('option'); {% endcomment %}
+                    {% comment %} opt.selected = true
+                    opt.disabled = true
+                    opt.value = e.value
+                    opt.innerText = e.innerText
+                    business_category.prepend(opt) {% endcomment %}
+                }
+            })
+        }
+
+
+
+
+        popup.querySelector('#add_user').onsubmit = function() {
+          const select = popup.querySelector('.department');
+          if (select.value === "") {
+            console.log('working department')
+            return false; // Prevent form submission
+          }
+          return true; // Allow form submission
+        };
+
+        
+        document.body.append(popup)
+
+
+        const update = document.querySelector('.update');
+        if (update){
+            update.addEventListener('click', async (e)=>{
+                e.preventDefault()
+                const inps = popup.querySelectorAll('.inps')
+                main_data = {}
+
+                inps.forEach((e,i)=>{
+                    if (e.localName === 'input'){
+                        main_data[e.name] = e.value===''?'-':e.value
+                    }
+
+                    if (e.localName === 'select'){
+                        main_data[e.name] = Number(e.value)
+                    }
+
+                })
+
+                let url = '{% url "update_lead" client_id=0 %}'.replace(0,data.client_id)
+
+                let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`}, JSON.stringify(main_data))
+                if (a){
+                    poperFunction(a.status,a.message, a.status===200?true:false)
+                } 
+
+            })
+        }
+    
+        const close_btn = popup.querySelectorAll('.close_btn');
+        close_btn.forEach(e=>{
+            e.addEventListener('click',()=>{
+                popup.remove()
+            })
+        })
+    
+        const edit_toggle = popup.querySelector('.edit_toggle');
+        edit_toggle.addEventListener('click',()=>{
+          const inps = document.querySelectorAll('.inps');
+    
+          inps.forEach(e=>{
+            if (!edit_toggle.checked){
+              e.disabled = true
+            } else {
+              e.disabled = false
+            }
+          })
+        })
+    
+    }
+
+
+    const approve = document.querySelectorAll('.approve');
+    approve.forEach(e=>{
+        e.addEventListener('click', async ()=>{
+            let url = '{% url "approve_commercial" approval_type="**" lead_id=0 %}'.replaceAll(0, e.getAttribute('data-lead-id')).replaceAll('**', '{{request.GET.type}}');
+            let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`})
+            if (a){
+                poperFunction(a.status, a.message, a.status === 200?true:false)
+            }
+        })
+    })
+
+
+    const reject = document.querySelectorAll('.reject');
+    reject.forEach(e=>{
+        e.addEventListener('click', async ()=>{
+            let url = '{% url "reject_commercial" approval_type="**" lead_id=0 %}'.replaceAll(0, e.getAttribute('data-lead-id')).replaceAll('**', '{{request.GET.type}}');
+            let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`})
+            if (a){
+                poperFunction(a.status, a.message, a.status === 200?true:false)
+            }
+        })
+    })
+
+
+
+    const all_services = document.querySelectorAll('.all_services');
+    all_services.forEach(e=>{
+        e.addEventListener('click', async ()=>{
+
+            let url = '{% url "lead_related_services" client_id=0 %}'.replaceAll(0, e.getAttribute('data-client-id'));
+            let a = await ftN(url, 'GET', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`})
+
+            const popup = document.createElement('div');
+            popup.classList.value = 'absolute top-0 w-screen h-screen bg-[rgba(0,0,0,0.6)] flex justify-center items-center '
+            popup.innerHTML = `
+                <div class="w-[600px] h-[500px] bg-white rounded-2xl">
+
+                    <div class="card w-[600px] h-[500px] bg-white text-neutral-content overflow-hidden">
+                        <div class="h-[35px] relative flex justify-center items-center text-white bg-slate-900">View/Edit User</div>
+                            <img class="close_btn absolute h-6 w-6 top-[5px] right-[5px] cursor-pointer" src="{% static "assets/images/close_button.png" %}">
+                        <div class="h-[40px] flex justify-between items-center text-white px-4 border-b bg-gray-200">
+                            <div class="text-slate-900 font-bold">Approvals</div>
+                            {% comment %} <label class="flex justify-center text-slate-900"><span>Edit</span><input type="checkbox" class="edit_toggle toggle ml-3" /><label> {% endcomment %}
+                        </div>
+                            <div class="main_container h-[calc(100%-100px)] w-full flex justify-between flex-wrap p-3 overflow-y-scroll text-slate-900 bg-gray-50">
+
+                                <div class="overflow-x-auto">
+                                    <table class="table table-zebra">
+                                        <!-- head -->
+                                        <thead>
+                                          <tr>
+                                            <th class="text-xs p-1">Lead id</th>
+                                            <th class="text-xs p-1">Segment</th>
+                                            <th class="text-xs p-1">Service</th>
+                                            <th class="text-xs p-1">Marketplace</th>
+                                            <th class="text-xs p-1">Program</th>
+                                            {% comment %} <th class="text-xs">Sub Program</th> {% endcomment %}
+                                            <th class="text-xs p-1">Associate</th>
+                                            <th class="text-xs p-1">Status</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody class="table_body">
+
+                                        </tbody>
+                                </table>
+
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            `
+            document.body.append(popup)
+
+            if (a){
+                const main_container = document.querySelector('.main_container');
+                const table_body = document.querySelector('.table_body');
+                const keys =  Object.keys(a.data[0])
+                
+                a.data.forEach(e=>{
+                    const tr = document.createElement('tr')
+                    tr.innerHTML = `
+                        <td class="capitalize text-xs" >${e.lead_id}</td>
+                        <td class="capitalize text-xs" >${e.segment.value.replaceAll('_',' ')}</td>
+                        <td class="capitalize text-xs" >${e.service.value.replaceAll('_',' ')}</td>
+                        <td class="capitalize text-xs" >${e.marketplace.value.replaceAll('_',' ')}</td>
+                        <td class="capitalize text-xs" >${e.program.value.replaceAll('_',' ')}</td>
+                        {% comment %} <td class="capitalize text-xs" >${e.sub_program.value}</td> {% endcomment %}
+                        <td class="capitalize text-xs" >${e.associate.name}</td>
+                        <td class="capitalize text-xs" >${e.status.replaceAll('_', ' ')}</td>
+                    `
+                    table_body.append(tr)
+
+                })
+            }
+
+
+            const close_btn = popup.querySelectorAll('.close_btn');
+            close_btn.forEach(e=>{
+                e.addEventListener('click',()=>{
+                    popup.remove()
+                })
+            })
+            
+        })
+    })
+
+
+    const view_edit = document.querySelectorAll('.view_edit');
+    view_edit.forEach(e=>{
+        e.addEventListener('click',()=>{
+            data = {
+                client_id: e.getAttribute('data-client-id'),
+                lead_id: e.getAttribute('data-lead-id'),
+                request_id: e.getAttribute('data-request-id'),
+                provider_id: e.getAttribute('data-provider-id'),
+                requester_id: e.getAttribute('data-requester-id'),
+                client_name: e.getAttribute('data-client-name'),
+                email_id: e.getAttribute('data-email-id'),
+                contact_number: e.getAttribute('data-contact-number'),
+                requester_location: e.getAttribute('data-requester-location'),
+                business_name: e.getAttribute('data-business-name'),
+                requester_sell_in_country: e.getAttribute('data-requester-sell-in-country'),
+                gst: e.getAttribute('data-gst'),
+                service_request_type: e.getAttribute('data-service-request-type'),
+                upload_date: e.getAttribute('data-upload-date'),
+                seller_address: e.getAttribute('data-seller-address'),
+                lead_owner_id: e.getAttribute('data-lead-owner-id'),
+                lead_owner: e.getAttribute('data-lead-owner'),
+                client_turnover_id: e.getAttribute('data-client-turnover-id'),
+                client_turnover: e.getAttribute('data-client-turnover'),
+                segment: e.getAttribute('data-segment'),
+                associate_id: e.getAttribute('data-associate-id'),
+                associate: e.getAttribute('data-associate'),
+                business_category: e.getAttribute('data-business-category'),
+            }
+
+            userEditPopUp(data)
+        })
+    })
+
+
+
+
+    const approve_leave = document.querySelectorAll('.approve_leave');
+    approve_leave.forEach(e=>{
+        e.addEventListener('click', async ()=>{
+            let url = '{% url "leave_action" type="approve" leave_id=0 %}'.replaceAll(0, e.getAttribute('data-leave-id'));
+
+            let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`})
+            if (a){
+                poperFunction(a.status, a.message, a.status === 200?true:false)
+            }
+        })
+    })
+
+
+    const reject_leave = document.querySelectorAll('.reject_leave');
+    reject_leave.forEach(e=>{
+        e.addEventListener('click', async ()=>{
+            let url = '{% url "leave_action" type="reject" leave_id=0 %}'.replaceAll(0, e.getAttribute('data-leave-id'));
+
+            let a = await ftN(url, 'PUT', {'Content-Type': 'application/json', 'Authorization': `Bearer ${getCookies().access}`})
+            if (a){
+                poperFunction(a.status, a.message, a.status === 200?true:false)
+            }
+        })
+    })
+
+
+</script>
+
+
+
+{% endblock  %}

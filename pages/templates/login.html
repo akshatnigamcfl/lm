@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.11.1/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Login</title>
+</head>
+<body class="bg-slate-900 w-screen h-screen">
+    {% load static %}
+
+    
+
+    {% if messages %}
+      <div class="message_box absolute top-[70px] left-[50%] translate-x-[-50%] shadow-2xl w-60 rounded-2xl cursor-arrow">
+        {% for message in messages %}
+          <div class="capitalize font-medium alert {% if message.tags == 'danger' %}alert-error{% endif %} text-white">{{ message }}</div>
+        {% endfor %}
+      </div>
+
+      <script>        
+        setTimeout(()=>{
+          document.querySelector('.message_box').remove();
+        }, 3000)
+      </script>
+
+    {% endif %}
+
+    <div class="w-full h-full flex justify-center items-center">
+        {% comment %} <div class="w-96 h-96 flex flex-col items-center border">
+            {% load static %}
+            <div class="w-24 h-24 bg-white rounded-full flex justify-center items-center my-3">
+                <img class="w-16 h-16" src="{% static "assets/images/evitaminlogo.png" %}">
+            </div>
+            <div class="my-3">    
+                <div class="h-12 my-2 bg-slate-100"><input></div>
+                <div class="h-12 my-2 bg-slate-100"><input></div>
+            </div>
+
+        </div> {% endcomment %}
+        <div class="h-full w-2/4 flex justify-center items-center">
+            <div class="hero-content flex-col lg:flex-row ">
+              <div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
+
+                  <div class="flex justify-center lg:text-center px-6 py-6 w-96">
+                    <img class="w-24 h-20" src="{% static "assets/images/evitaminlogo.png" %}">
+                  </div>
+    
+
+                  {% comment %} <div class="text-center text-lg tracking-wide w-full">Login</div> {% endcomment %}
+                  <form class="card-body p-10 py-6" action="{{request.META.PATH_INFO}}" method="POST" >
+                    {% csrf_token %}
+
+                    <div class="form-control">
+                      <input type="email" placeholder="Email" name='email' class="email input input-bordered text-xs" required />
+                    </div>
+                    <div class="form-control">
+                      <input type="password" placeholder="Password" name='password' class="email input input-bordered text-xs" required />
+                    </div>
+                    <span class="text-sm text-slate-700 hover:text-sky-600 cursor-pointer w-auto px-2 text-xs"><a href="{% url "reset_password" %}">Forget password?</a></span>
+                    <div class="form-control mt-6">
+                      <button class="btn btn-primary submit">Submit</button>
+                    </div>
+                  </form>
+    
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      document.querySelector('.submit').onsubmit = function (){
+        document.querySelector('.card-body').reset();
+      }
+    </script>
+    
+</body>
+</html>
